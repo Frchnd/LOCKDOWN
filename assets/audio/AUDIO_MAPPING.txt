@@ -1,0 +1,17 @@
+LOCKDOWN v0.3 AUDIO MAPPING
+
+Radio Static SFX.wav
+- Dipakai saat panel Radio dibuka.
+- Berhenti saat keluar dari panel Radio.
+
+Craft item SFX.wav
+- Dipakai hanya setelah crafting berhasil.
+
+Heal SFX.wav
+- Dipakai untuk setiap perlakuan healing: Obat Darurat, tidur, Bantuan Medis Maya, dan healing lain melalui applyHealing().
+- Playback hanya detik 9.00 sampai 11.00 (offset 9, duration 2).
+- Audio di luar segmen itu diabaikan.
+
+AMBIENCE
+- Diparkir sementara pada v0.3.
+- sound ambiene.wav tidak dimuat dan tidak dicache.
