@@ -1,0 +1,15 @@
+{
+  "name": "LOCKDOWN — Narrative Survival Management",
+  "short_name": "LOCKDOWN",
+  "description": "Game survival-management naratif offline. Bertahan di bunker, kelola resource, survivor, ekspedisi, dan sinyal dari dunia luar.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07100b",
+  "theme_color": "#07100b",
+  "icons": [
+    {"src":"assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
