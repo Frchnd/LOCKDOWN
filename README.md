@@ -1,56 +1,51 @@
 # LOCKDOWN PWA
 
-Playable PWA vertical slice berdasarkan LOCKDOWN Greenfield Master Game Specification.
+Playable PWA vertical slice for **LOCKDOWN — Narrative Survival Management**.
 
-## Jalankan lokal
-PWA/service worker tidak bekerja optimal jika `index.html` dibuka langsung dengan `file://`.
-Serve folder ini melalui localhost:
+## Local preview
+
+PWA/service worker membutuhkan HTTP/HTTPS, jadi jangan buka `index.html` langsung dengan `file://`.
 
 ```bash
-python -m http.server 8080
+python3 -m http.server 8080
 ```
 
-Lalu buka:
+Buka `http://localhost:8080`.
 
-`http://localhost:8080`
+## Deploy ke GitHub Pages
 
-## Install di Android
-1. Host folder ini di HTTPS (GitHub Pages / Netlify / Cloudflare Pages / server HTTPS lain), atau gunakan localhost untuk testing.
-2. Buka di Chrome Android.
-3. Pilih **Install app / Add to Home Screen**.
-4. Setelah asset pertama kali tercache, game dapat dibuka offline.
+Repository ini sudah menyertakan workflow:
 
-## Isi build
-- `index.html` — app shell
-- `app.css` — dark portrait UI
-- `app.js` — state, simulation, story, station, survivor, expedition, save/load
-- `manifest.webmanifest` — install metadata
-- `sw.js` — offline cache
-- `assets/menu-bg.webp` — cinematic menu background
-- `assets/icon-192.png`, `icon-512.png` — PWA icons
+`.github/workflows/deploy-pages.yml`
 
-## Implemented
-- Main Menu + Continue/New Game/Archive/Settings
-- 7-frame prologue
-- Day/time simulation
-- 8 core stats
-- Local autosave (`lockdown_save`)
-- Guided onboarding: Gudang → Generator → Keamanan → Radio → survive to 20:00
-- 2×4 station grid
-- Contextual inventory
-- Generator, Medis, Kasur, Keamanan, Meja Kerja, Radio
-- Upgrade Lv1–Lv3 + MAX state
-- Daily objectives and reward
-- Maya & Raka survivor systems
-- Trust, tension, talk/feed/special help
-- World condition cycle
-- Expedition locations + loot/risk
-- Relay multi-stage mission
-- ECHO-7 / HAVEN-3 story beats
-- Day 5, Day 6, Day 7 finale flow
-- Random bunker emergencies
-- Game Over lock
-- Offline service worker
+### Cara paling mudah
 
-## Scope note
-Ini playable PWA vertical slice, bukan release-final production build. Audio assets/Web Audio ambience, seluruh variasi encounter, dedicated cinematic image per prologue frame, dan Android native WebView wrapper belum dibundel di paket PWA ini.
+1. Buat repository baru di GitHub, misalnya `lockdown`.
+2. Upload/push seluruh isi folder ini ke branch `main`.
+3. Buka **Settings → Pages**.
+4. Pada **Build and deployment → Source**, pilih **GitHub Actions**.
+5. Buka tab **Actions** dan pastikan workflow **Deploy LOCKDOWN to GitHub Pages** selesai hijau.
+6. Kembali ke **Settings → Pages** untuk membuka URL situs.
+
+Setelah itu setiap push ke `main` akan melakukan deploy ulang otomatis.
+
+## Git CLI
+
+Dari folder project:
+
+```bash
+git init
+git add .
+git commit -m "Initial LOCKDOWN PWA"
+git branch -M main
+git remote add origin https://github.com/USERNAME/lockdown.git
+git push -u origin main
+```
+
+Ganti `USERNAME` dengan username GitHub kamu.
+
+## PWA notes
+
+- `manifest.webmanifest` memakai relative `start_url` dan `scope`, sehingga aman dipasang di project GitHub Pages seperti `/lockdown/`.
+- Service worker dan cache assets juga memakai relative paths.
+- GitHub Pages menggunakan HTTPS, sehingga service worker/PWA dapat aktif setelah deploy.
