@@ -23,15 +23,18 @@ const isStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches
 
 const AudioUI=(()=>{
  let ctx=null, master=null, sfxBus=null, ambienceBus=null, noiseBuffer=null;
- let radioSource=null;
+ let radioSource=null, ambienceTimer=null, ambienceToken=0, ambienceRunning=false;
+ const ambienceNodes=new Set();
  const buffers=new Map(), loads=new Map();
  const AC=window.AudioContext||window.webkitAudioContext;
  const FILES={
   radio:'./assets/audio/Radio Static SFX.wav',
   craft:'./assets/audio/Craft item SFX.wav',
   heal:'./assets/audio/Heal SFX.wav',
+  ambience:'./assets/audio/Bunker AMBIENCE.wav',
  };
  function cfg(){return state?.settings||settings()}
+ function wantsAmbience(){return !!(state&&view.screen==='game'&&cfg().ambience&&!document.hidden)}
  function init(){
   if(ctx||!AC)return !!ctx;
   ctx=new AC();
@@ -40,7 +43,11 @@ const AudioUI=(()=>{
   const len=Math.max(1,Math.floor(ctx.sampleRate*2));noiseBuffer=ctx.createBuffer(1,len,ctx.sampleRate);const d=noiseBuffer.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   sync(true);preloadAll();return true;
  }
- function ensure(){if(!init())return false;if(ctx.state==='suspended')ctx.resume().catch(()=>{});sync();return true}
+ function ensure(){
+  if(!init())return false;
+  if(ctx.state==='suspended')ctx.resume().then(()=>{sync();if(wantsAmbience())startAmbience()}).catch(()=>{});
+  sync();if(wantsAmbience())startAmbience();return true;
+ }
  function load(name){
   if(buffers.has(name))return Promise.resolve(buffers.get(name));
   if(loads.has(name))return loads.get(name);
@@ -52,7 +59,7 @@ const AudioUI=(()=>{
   if(!ctx)return;const s=cfg(),t=ctx.currentTime,tc=immediate?0:.035;
   master.gain.setTargetAtTime(clamp(Number(s.master)||0,0,100)/100,t,tc||.001);
   sfxBus.gain.setTargetAtTime(s.sfx?clamp(Number(s.sfxVol)||0,0,100)/100:0,t,tc||.001);
-  ambienceBus.gain.setTargetAtTime(0,t,tc||.001); // ambience parked in v0.3
+  ambienceBus.gain.setTargetAtTime(s.ambience&&view.screen==='game'?clamp(Number(s.ambienceVol)||0,0,100)/100:0,t,tc||.001);
  }
  function playAsset(name,{offset=0,duration=null,gain=1}={}){
   if(!ensure()||!cfg().sfx)return Promise.resolve(null);
@@ -82,11 +89,48 @@ const AudioUI=(()=>{
  function craft(){playAsset('craft')}
  // User rule: only seconds 9.00–11.00 of Heal SFX are ever played.
  function heal(){playAsset('heal',{offset:9,duration:2})}
- function background(){if(!ctx)return;master.gain.setTargetAtTime(0,ctx.currentTime,.045);setTimeout(()=>{if(document.hidden&&ctx?.state==='running')ctx.suspend().catch(()=>{})},140)}
- function foreground(){if(!ctx)return;ctx.resume().then(()=>{sync();startAmbience()}).catch(()=>{})}
- return {ensure,sync,uiClick,damage,hammer,radioBurst,stopRadio,craft,heal,background,foreground};
+ function clearAmbienceTimer(){if(ambienceTimer){clearTimeout(ambienceTimer);ambienceTimer=null}}
+ function stopAmbience(fade=.45){
+  clearAmbienceTimer();ambienceToken++;ambienceRunning=false;
+  if(!ctx){ambienceNodes.clear();return}
+  const t=ctx.currentTime;
+  ambienceNodes.forEach(({src,g})=>{try{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(Math.max(.0001,g.gain.value),t);g.gain.linearRampToValueAtTime(.0001,t+fade);src.stop(t+fade+.06)}catch{}});
+  ambienceNodes.clear();
+ }
+ function scheduleAmbienceNode(buf,when,token,first=false){
+  if(!ctx||token!==ambienceToken||!wantsAmbience())return;
+  const dur=buf.duration;
+  if(!Number.isFinite(dur)||dur<1)return;
+  const overlap=Math.min(4,Math.max(1.25,dur*.08));
+  const safeWhen=Math.max(ctx.currentTime+.02,when);
+  const endAt=safeWhen+dur;
+  const nextAt=endAt-overlap;
+  const src=ctx.createBufferSource(),g=ctx.createGain();
+  src.buffer=buf;src.connect(g);g.connect(ambienceBus);
+  g.gain.setValueAtTime(.0001,safeWhen);
+  g.gain.linearRampToValueAtTime(1,safeWhen+(first?Math.min(1.5,overlap):overlap));
+  g.gain.setValueAtTime(1,nextAt);
+  g.gain.linearRampToValueAtTime(.0001,endAt);
+  const node={src,g};ambienceNodes.add(node);src.onended=()=>ambienceNodes.delete(node);src.start(safeWhen);src.stop(endAt+.05);
+  const delay=Math.max(120,(nextAt-ctx.currentTime-.35)*1000);
+  clearAmbienceTimer();ambienceTimer=setTimeout(()=>scheduleAmbienceNode(buf,nextAt,token,false),delay);
+ }
+ function startAmbience(){
+  if(!ctx||ambienceRunning||!wantsAmbience())return;
+  ambienceRunning=true;const token=++ambienceToken;
+  load('ambience').then(buf=>{
+   if(!buf||token!==ambienceToken||!wantsAmbience()){ambienceRunning=false;return}
+   scheduleAmbienceNode(buf,ctx.currentTime+.04,token,true);
+  });
+ }
+ function scene(){
+  if(!ctx)return;sync();
+  if(wantsAmbience())startAmbience();else if(ambienceRunning||ambienceNodes.size)stopAmbience(.35);
+ }
+ function background(){if(!ctx)return;stopAmbience(.18);master.gain.setTargetAtTime(0,ctx.currentTime,.045);setTimeout(()=>{if(document.hidden&&ctx?.state==='running')ctx.suspend().catch(()=>{})},140)}
+ function foreground(){if(!ctx)return;ctx.resume().then(()=>{sync();scene()}).catch(()=>{})}
+ return {ensure,sync,scene,uiClick,damage,hammer,radioBurst,stopRadio,craft,heal,startAmbience,stopAmbience,background,foreground};
 })();
-
 function settings(){try{return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem(SETTINGS)||'{}')}}catch{return clone(DEFAULT_SETTINGS)}}
 function fresh(){const s=clone(BASE);s.settings=settings();seedDaily(s);return s}
 function validate(raw){const s={...fresh(),...raw};['health','hunger','thirst','fatigue','morale','radiation','power','integrity'].forEach(k=>s[k]=clamp(Number(s[k])||0));s.day=Math.max(1,Math.floor(Number(s.day)||1));s.hour=clamp(Math.floor(Number(s.hour)||0),0,23);s.filters=Math.max(0,Math.floor(Number(s.filters)||0));s.scrap=Math.max(0,Math.floor(Number(s.scrap)||0));s.items={...clone(BASE.items),...(raw.items||{})};s.upgrades={...clone(BASE.upgrades),...(raw.upgrades||{})};Object.keys(s.upgrades).forEach(k=>s.upgrades[k]=clamp(Math.floor(s.upgrades[k]||1),1,3));s.story={...clone(BASE.story),...(raw.story||{})};s.world={...clone(BASE.world),...(raw.world||{})};s.flags={...clone(BASE.flags),...(raw.flags||{})};s.progression={...clone(BASE.progression),...(raw.progression||{})};s.relations={...clone(BASE.relations),...(raw.relations||{})};s.settings={...DEFAULT_SETTINGS,...(raw.settings||{})};['master','sfxVol','ambienceVol'].forEach(k=>s.settings[k]=clamp(Number(s.settings[k])||0,0,100));if(!Array.isArray(s.logs))s.logs=[];if(!Array.isArray(s.survivors))s.survivors=[];if(!Array.isArray(s.dailyObjectives))seedDaily(s);return s}
@@ -188,7 +232,7 @@ function relayMission(){storyModal('Stasiun Relay — Stage 1','Pintu utama tida
 function relayStage2(){view.modal={title:'Stasiun Relay — Ruang Kontrol',text:'Modul relay masih utuh. Ada log jaringan dan server cadangan yang belum mati.',choices:[['Ambil Modul Sekarang','+2 Komponen • risiko rendah',()=>relayFinish('quick')],['Salin Log','HAVEN Evidence +1 • +3 Komponen • 18% injury • extra Rad 4',()=>relayFinish('logs')],['Server Cadangan','+5 Komponen • 50% Filter • 38% injury • extra Rad 6',()=>relayFinish('server')]]};render()}
 function relayFinish(mode){if(mode==='quick')state.scrap+=2;if(mode==='logs'){state.scrap+=3;state.story.havenEvidence++;state.radiation=clamp(state.radiation+4);if(Math.random()<.18)state.health=clamp(state.health-5)}if(mode==='server'){state.scrap+=5;state.radiation=clamp(state.radiation+6);if(Math.random()<.5)state.filters++;if(Math.random()<.38)state.health=clamp(state.health-8)}state.story.relayRecovered=true;state.progression.mainStage=9;state.world.visited.push('relay');objective('expedition');log('Modul Relay berhasil dibawa pulang.');closeModal();advance(LOCS.relay.time,{expedition:true})}
 
-function menu(){const install=installPrompt&&!isStandalone()?'<button class="btn ghost install-btn" data-act="install">INSTALL PWA <small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-inner"><div class="system-strip"><span>SYS 07</span><span>LOCAL // OFFLINE</span><span>CH.01</span></div><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><p class="tagline">Bunker bukan tujuan akhir. Bunker hanya membeli waktu sampai lo tahu apa yang masih hidup di permukaan.</p><div class="menu-actions"><button class="btn primary" data-act="continue" ${hasSave()?'':'disabled'}>CONTINUE</button><button class="btn ghost" data-act="new">NEW GAME</button><button class="btn ghost" data-act="archive">STORY ARCHIVE</button><button class="btn ghost" data-act="settings">SETTINGS</button>${install}</div><div class="version">PWA v0.3 · AUDIO ASSET PASS · OFFLINE READY</div></div></main>`}
+function menu(){const install=installPrompt&&!isStandalone()?'<button class="btn ghost install-btn" data-act="install">INSTALL PWA <small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-inner"><div class="system-strip"><span>SYS 07</span><span>LOCAL // OFFLINE</span><span>CH.01</span></div><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><p class="tagline">Bunker bukan tujuan akhir. Bunker hanya membeli waktu sampai lo tahu apa yang masih hidup di permukaan.</p><div class="menu-actions"><button class="btn primary" data-act="continue" ${hasSave()?'':'disabled'}>CONTINUE</button><button class="btn ghost" data-act="new">NEW GAME</button><button class="btn ghost" data-act="archive">STORY ARCHIVE</button><button class="btn ghost" data-act="settings">SETTINGS</button>${install}</div><div class="version">PWA v0.4 · AMBIENCE LOOP PASS · OFFLINE READY</div></div></main>`}
 function prologue(){const frames=[['Siaran Darurat','Peringatan darurat nasional masuk beberapa detik sebelum jaringan mati.'],['Langit Menyala','Cahaya putih menelan horizon. Kota tidak sempat memahami apa yang terjadi.'],['Kota Runtuh','Sirene, debu, dan komunikasi yang putus. Permukaan berubah menjadi wilayah yang tidak dikenal.'],['Di Bawah Rumah','Di bawah rumah, sebuah bunker lama masih bisa disegel.'],['Lockdown Engaged','Pintu menutup. Dunia luar menjadi angka, noise radio, dan risiko.'],['Sistem Kembali Hidup','Generator menyala. Persediaan terbatas. Sistem bunker kembali merespons.'],['Bertahan Bukan Tujuan Akhir','Bunker hanya membeli waktu. Tujuan sebenarnya: cari tahu apakah masih ada tempat aman.']];const f=frames[view.prologueFrame];return `<main class="screen prologue"><div class="prologue-bg"></div><div class="prologue-inner"><div class="story-tag">PROLOGUE · ${view.prologueFrame+1}/7</div><h1>${f[0]}</h1><p>${f[1]}</p><div class="pager">${frames.map((_,i)=>`<i class="${i<=view.prologueFrame?'on':''}"></i>`).join('')}</div><button class="btn primary" data-act="prologue-next">${view.prologueFrame===6?'MASUK BUNKER':'LANJUT'}</button></div></main>`}
 function dashboard(){const q=mainQuest();const stats=[['health','Kesehatan','♥',state.health],['hunger','Lapar','◒',state.hunger],['thirst','Haus','◉',state.thirst],['fatigue','Kelelahan','⌁',state.fatigue],['morale','Moral','☺',state.morale],['radiation','Radiasi','☢',state.radiation],['power','Daya','ϟ',state.power],['integrity','Bunker','⬡',state.integrity]];const stations=[['radio','Radio','⌁','Sinyal & arsip'],['medis','Medis','✚','Obat & recovery'],['gudang','Gudang','▣','Food & drinks'],['kasur','Kasur','▱','Tidur & pulih'],['security','Keamanan','◉','Scan & repair'],['generator','Generator','ϟ','Fuel & daya'],['workbench','Meja Kerja','⚒','Craft & upgrade'],['expedition','Ekspedisi','⌖','Scavenge & story']];return `<main class="screen"><header class="topbar"><div class="grow"><div class="day">HARI ${state.day} · ${worldCond().name.toUpperCase()}</div><div class="clock">${fmtHour()}</div></div><div class="header-meta">${overall()}<br>Daya ${Math.round(state.power)}%</div><button class="icon-btn" data-act="skip">+1H</button><button class="icon-btn" data-act="menu">☰</button></header>${isGameOver()?`<section class="card quest"><div class="story-tag">GAME OVER</div><strong>${state.health<=0?'Tubuh lo tidak bertahan.':'Bunker runtuh.'}</strong><p>Save ini tidak bisa melanjutkan gameplay. Mulai ulang dari Settings atau New Game.</p></section>`:''}<section class="card quest"><div class="card-title"><h2>Main Quest</h2><span class="label">Stage ${Math.min(state.progression.mainStage,10)}/10</span></div><strong>${q[0]}</strong><p>${q[1]}</p><div class="step">Direction before data.</div></section><div class="section-head"><h3>Status</h3><span>${overall()}</span></div><section class="stats">${stats.map(([k,n,i,v])=>`<div class="stat ${statClass(k,v)}"><div class="stat-head"><span>${i} ${n}</span><span class="stat-value">${Math.round(v)}</span></div><div class="bar"><i style="width:${k==='hunger'||k==='thirst'||k==='fatigue'||k==='radiation'?v:Math.max(2,v)}%"></i></div></div>`).join('')}</section><div class="section-head"><h3>Station</h3><span>2 × 4</span></div><section class="station-grid">${stations.map(([id,n,ico,sub])=>`<button class="station ${stationLocked(id)||isGameOver()?'locked':''}" data-panel="${id}" ${stationLocked(id)||isGameOver()?'disabled':''}><span class="ico">${ico}</span><span><b>${n}</b><small>${sub}</small></span>${!stationLocked(id)&&['generator','medis','kasur','security','workbench'].includes(id)?`<span class="badge">LV ${state.upgrades[id==='security'?'keamanan':id]}</span>`:''}</button>`).join('')}</section>${state.survivors.length?`<div class="section-head"><h3>Survivor</h3><span>Tension ${Math.round(state.relations.tension)}</span></div><section class="card survivor-list">${state.survivors.map(s=>`<button class="survivor" data-survivor="${s.id}"><div class="avatar">${s.name[0]}</div><div class="grow"><b>${s.name}</b><small>${s.role} · ${s.skill}</small></div><div class="trust">${Math.round(s.trust)}</div></button>`).join('')}</section>`:''}<div class="section-head"><h3>Daily Objective</h3><span>${state.dailyObjectives.filter(x=>x.done).length}/3</span></div><section class="card">${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}</section><div class="section-head"><h3>Activity Log</h3><span>terbaru</span></div><section class="card">${state.logs.length?state.logs.slice(0,7).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section><div class="version">LOCKDOWN · PWA v0.3 · LOCAL SAVE · OFFLINE</div></main>`}
 function panel(){
@@ -275,9 +319,9 @@ function panel(){
  return `<main class="screen panel"><header class="panel-head"><button class="back" data-act="back">←</button><h1>${title}</h1><small>D${state.day} ${fmtHour()}</small></header>${body}</main>`;
 }
 function upgradeCard(key,label){let lvl=state.upgrades[key],cost=lvl===1?5:lvl===2?9:0;return `<button class="action ${lvl>=3||state.scrap<cost?'disabled':''}" data-upgrade="${key}" ${lvl>=3?'disabled':''}><b>${label} Lv${lvl} ${lvl>=3?'· MAX':'→ Lv'+(lvl+1)}</b><p>${lvl>=3?'Upgrade Maksimum. Tetap terlihat sebagai state MAX.':'Tingkatkan efisiensi station.'}</p><div class="costs"><span class="cost">${lvl>=3?'MAX':cost+' Komponen'}</span></div>${lvl<3&&state.scrap<cost?'<div class="reason">Komponen tidak cukup.</div>':''}</button>`}
-function settingsPanel(){const range=(key,label)=>`<label class="setting-range"><span>${label}<b id="${key}Label">${state.settings[key]}</b></span><input type="range" min="0" max="100" value="${state.settings[key]}" data-volume="${key}"></label>`;return `<div class="card setting-card"><div class="objective"><span>SFX</span><span style="margin-left:auto"><input type="checkbox" data-setting="sfx" ${state.settings.sfx?'checked':''}></span></div><div class="objective"><span>Vibration</span><span style="margin-left:auto"><input type="checkbox" data-setting="vibration" ${state.settings.vibration?'checked':''}></span></div></div><div class="card setting-card">${range('master','Master Volume')}${range('sfxVol','SFX Volume')}</div><p class="settings-note">Audio v0.3 memakai asset lokal offline untuk Radio Static, Craft item, dan Heal. Heal hanya memainkan detik 9–11. Ambience diparkir sementara.</p><button class="btn" style="width:100%;margin-bottom:8px" data-act="to-menu">MAIN MENU</button><button class="btn danger" style="width:100%" data-act="restart">RESTART GAME</button>`}
+function settingsPanel(){const range=(key,label)=>`<label class="setting-range"><span>${label}<b id="${key}Label">${state.settings[key]}</b></span><input type="range" min="0" max="100" value="${state.settings[key]}" data-volume="${key}"></label>`;return `<div class="card setting-card"><div class="objective"><span>SFX</span><span style="margin-left:auto"><input type="checkbox" data-setting="sfx" ${state.settings.sfx?'checked':''}></span></div><div class="objective"><span>Ambience</span><span style="margin-left:auto"><input type="checkbox" data-setting="ambience" ${state.settings.ambience?'checked':''}></span></div><div class="objective"><span>Vibration</span><span style="margin-left:auto"><input type="checkbox" data-setting="vibration" ${state.settings.vibration?'checked':''}></span></div></div><div class="card setting-card">${range('master','Master Volume')}${range('sfxVol','SFX Volume')}${range('ambienceVol','Ambience Volume')}</div><p class="settings-note">Ambience memakai Bunker AMBIENCE.wav dengan crossfade-loop selama gameplay. Radio/Craft/Heal tetap memakai SFX asset lokal; Heal hanya memainkan detik 9–11.</p><button class="btn" style="width:100%;margin-bottom:8px" data-act="to-menu">MAIN MENU</button><button class="btn danger" style="width:100%" data-act="restart">RESTART GAME</button>`}
 function modal(){if(!view.modal)return'';return `<div class="modal-wrap"><div class="modal"><div class="story-tag">DECISION</div><h2>${view.modal.title}</h2><p>${view.modal.text}</p><div class="choice">${view.modal.choices.map((c,i)=>`<button class="btn ${i===0?'primary':''}" data-choice="${i}">${c[0]}<small>${c[1]||''}</small></button>`).join('')}</div></div></div>`}
-function render(){let html=view.screen==='menu'?menu():view.screen==='prologue'?prologue():view.panel?panel():dashboard();$('#app').innerHTML=html+modal();bind();}
+function render(){let html=view.screen==='menu'?menu():view.screen==='prologue'?prologue():view.panel?panel():dashboard();$('#app').innerHTML=html+modal();bind();AudioUI.scene();}
 function bind(){
  document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>act(b.dataset.act));
  document.querySelectorAll('[data-panel]').forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));
@@ -291,8 +335,8 @@ function bind(){
  document.querySelectorAll('[data-feed]').forEach(b=>b.onclick=()=>survivorFeed(b.dataset.feed));
  document.querySelectorAll('[data-help]').forEach(b=>b.onclick=()=>survivorHelp(b.dataset.help));
  document.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{const c=view.modal?.choices?.[Number(b.dataset.choice)];if(c)c[2]()});
- document.querySelectorAll('[data-setting]').forEach(i=>i.onchange=()=>{state.settings[i.dataset.setting]=i.checked;localStorage.setItem(SETTINGS,JSON.stringify(state.settings));AudioUI.ensure();AudioUI.sync();save()});
- document.querySelectorAll('[data-volume]').forEach(i=>i.oninput=()=>{const k=i.dataset.volume,v=clamp(Number(i.value)||0,0,100);state.settings[k]=v;const lab=$('#'+k+'Label');if(lab)lab.textContent=v;localStorage.setItem(SETTINGS,JSON.stringify(state.settings));AudioUI.ensure();AudioUI.sync();save()});
+ document.querySelectorAll('[data-setting]').forEach(i=>i.onchange=()=>{state.settings[i.dataset.setting]=i.checked;localStorage.setItem(SETTINGS,JSON.stringify(state.settings));AudioUI.ensure();AudioUI.sync();AudioUI.scene();save()});
+ document.querySelectorAll('[data-volume]').forEach(i=>i.oninput=()=>{const k=i.dataset.volume,v=clamp(Number(i.value)||0,0,100);state.settings[k]=v;const lab=$('#'+k+'Label');if(lab)lab.textContent=v;localStorage.setItem(SETTINGS,JSON.stringify(state.settings));AudioUI.ensure();AudioUI.sync();AudioUI.scene();save()});
  document.querySelectorAll('button:not([disabled])').forEach(b=>b.addEventListener('pointerdown',()=>AudioUI.uiClick(),{passive:true}));
  const r=$('#sleepRange');if(r)r.oninput=()=>$('#sleepLabel').textContent=r.value+' jam'
 }

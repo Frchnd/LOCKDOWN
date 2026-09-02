@@ -49,3 +49,13 @@ Ganti `USERNAME` dengan username GitHub kamu.
 - `manifest.webmanifest` memakai relative `start_url` dan `scope`, sehingga aman dipasang di project GitHub Pages seperti `/lockdown/`.
 - Service worker dan cache assets juga memakai relative paths.
 - GitHub Pages menggunakan HTTPS, sehingga service worker/PWA dapat aktif setelah deploy.
+
+## v0.4 ambience
+
+The ambience runtime expects this exact file path:
+
+`assets/audio/Bunker AMBIENCE.wav`
+
+Playback is handled by Web Audio with an adaptive crossfade loop (1.25–4.0 seconds depending on source duration). It plays only during gameplay, fades/stops when leaving gameplay or backgrounding the app, and resumes after foregrounding.
+
+Settings now include Ambience on/off and Ambience Volume.

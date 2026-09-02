@@ -1,17 +1,17 @@
-LOCKDOWN v0.3 AUDIO MAPPING
+LOCKDOWN v0.4 AUDIO MAPPING
 
 Radio Static SFX.wav
-- Dipakai saat panel Radio dibuka.
-- Berhenti saat keluar dari panel Radio.
+- Radio panel / radio activity.
 
 Craft item SFX.wav
-- Dipakai hanya setelah crafting berhasil.
+- Successful crafting only.
 
 Heal SFX.wav
-- Dipakai untuk setiap perlakuan healing: Obat Darurat, tidur, Bantuan Medis Maya, dan healing lain melalui applyHealing().
-- Playback hanya detik 9.00 sampai 11.00 (offset 9, duration 2).
-- Audio di luar segmen itu diabaikan.
+- Every action that actually raises Health.
+- Playback rule: seconds 9.00 through 11.00 only.
 
-AMBIENCE
-- Diparkir sementara pada v0.3.
-- sound ambiene.wav tidak dimuat dan tidak dicache.
+Bunker AMBIENCE.wav
+- Gameplay ambience.
+- Continuous Web Audio crossfade-loop.
+- Fades out / AudioContext suspends when app is backgrounded.
+- Resumes cleanly when gameplay returns.

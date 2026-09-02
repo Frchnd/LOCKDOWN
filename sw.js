@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v3-noamb';
+const CACHE='lockdown-pwa-v4-ambience';
 const CORE=['./','./index.html','./app.css','./app.js','./manifest.webmanifest','./assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp'];
-const AUDIO=['./assets/audio/Radio Static SFX.wav','./assets/audio/Craft item SFX.wav','./assets/audio/Heal SFX.wav'];
+const AUDIO=['./assets/audio/Radio Static SFX.wav','./assets/audio/Craft item SFX.wav','./assets/audio/Heal SFX.wav','./assets/audio/Bunker AMBIENCE.wav'];
 self.addEventListener('install',e=>e.waitUntil(
   caches.open(CACHE).then(async c=>{
     await c.addAll(CORE);

@@ -34,3 +34,12 @@ Setelah GitHub Pages selesai publish, refresh halaman. Jika browser masih menamp
 - Service worker hanya mencoba cache Radio/Craft/Heal.
 - Settings ambience disembunyikan sementara agar tidak memberi kontrol palsu.
 - Mapping Heal tetap terpusat pada applyHealing() dengan playback 9.00–11.00 detik.
+
+
+## v0.4 — Bunker Ambience Loop Pass
+- Ambience source is now `Bunker AMBIENCE.wav`.
+- Runtime uses overlapping buffer sources with adaptive 1.25–4.0 second crossfade to hide loop seams.
+- Ambience plays only while the player is inside the game screen, not Main Menu / Prologue.
+- Ambience fades and stops when backgrounded, then resumes after foregrounding.
+- Ambience toggle and volume control restored in Settings.
+- Service worker cache bumped to `lockdown-pwa-v4-ambience`.
