@@ -9,7 +9,7 @@ const BASE={
  items:{foods:{snack:{name:'Snack Bar',qty:2,hunger:-12,morale:2},can:{name:'Makanan Kaleng',qty:3,hunger:-28,thirst:4,morale:1}},drinks:{water:{name:'Air Mineral',qty:4,thirst:-28},coffee:{name:'Kopi',qty:1,thirst:-8,fatigue:-18,morale:2}},meds:{med:{name:'Obat Darurat',qty:2}},fuel:{fuel:{name:'Fuel',qty:3}}},
  upgrades:{generator:1,medis:1,kasur:1,keamanan:1,workbench:1}, settings:clone(DEFAULT_SETTINGS), survivors:[], relations:{tension:0,lastConflictDay:0},
  world:{scoutedDay:0,visited:[],unlocked:['house','market','clinic','apartment','gas','fire'],conditionIndex:0},
- onboarding:0,dailyObjectives:[],objectiveRewardClaimed:false,story:{prologueDone:false,night1:false,echoResponse:null,echoContact:false,relayUnlocked:false,relayRecovered:false,havenChoice:null,havenEvidence:0,day5:false,day6:false,finaleChoice:null,chapterComplete:false,depotVisited:false,transmissions:0},
+ onboarding:0,dailyObjectives:[],objectiveRewardClaimed:false,story:{prologueDone:false,night1:false,echoResponse:null,echoContact:false,relayUnlocked:false,relayRecovered:false,havenChoice:null,havenEvidence:0,day5:false,day6:false,finaleChoice:null,chapterComplete:false,depotVisited:false,transmissions:0,radioArchive:[]},
  progression:{mainStage:1},flags:{coffeeCrashUntil:0,lastRandomEventDay:0,lastRandomEventHour:-1,mayaOffered:false,rakaOffered:false},logs:[],lastThreat:null
 };
 const WORLD=[
@@ -208,7 +208,7 @@ function checkStory(){
  ])}
  if(state.day===1&&state.hour>=20&&!state.story.night1){state.story.night1=true;state.progression.mainStage=6;storyModal('Malam Pertama','Lampu bunker meredup. Di balik dengung generator, frekuensi radio menangkap pola yang terlalu teratur untuk disebut noise.',[['Buka Radio','Main Quest diperbarui.',()=>{closeModal();openPanel('radio')}],['Nanti','Tetap bisa dilanjutkan dari Radio.',closeModal]])}
  if(state.day>=2&&state.story.echoContact&&state.progression.mainStage<7)state.progression.mainStage=7;
- if(state.day>=3&&state.story.echoContact&&!state.story.relayUnlocked){state.story.relayUnlocked=true;state.world.unlocked.push('relay');state.progression.mainStage=8;storyModal('ECHO-7: Koordinat','Transmisi kedua berisi koordinat Stasiun Relay. “Pulihkan node. Jangan percaya kanal terbuka.”',[['Catat koordinat','Stasiun Relay terbuka.',closeModal]])}
+ if(state.day>=3&&state.story.echoContact&&!state.story.relayUnlocked){state.story.relayUnlocked=true;state.world.unlocked.push('relay');state.progression.mainStage=8;pushRadioArchive('ECHO-7 // RELAY COORDINATES','Transmisi kedua berisi koordinat Stasiun Relay. “Pulihkan node. Jangan percaya kanal terbuka.”','STORY');storyModal('ECHO-7: Koordinat','Transmisi kedua berisi koordinat Stasiun Relay. “Pulihkan node. Jangan percaya kanal terbuka.”',[['Catat koordinat','Stasiun Relay terbuka.',closeModal]])}
  if(state.day>=4&&state.hour>=10&&!state.flags.rakaOffered&&!survivor('raka')){state.flags.rakaOffered=true;storyModal('Seorang Teknisi','Raka menemukan bunker lewat jalur utilitas lama. Ia menawarkan bantuan untuk generator—dengan syarat ia mendapat tempat.',[['Terima Raka','Moral +3. Teknisi membantu generator.',()=>joinRaka()],['Tolak','Tidak ada biaya langsung.',closeModal]])}
  if(state.day>=5&&!state.story.day5&&state.story.relayRecovered){state.story.day5=true;const maya=survivor('maya'),raka=survivor('raka');if(state.story.havenChoice==='send')storyModal('HAVEN-3: Checksum','Pola angka berulang muncul di kanal HAVEN. '+(maya?'Maya menganggapnya janggal. ':'')+(raka?'Raka menyebutnya mungkin checksum normal.':''),[['Catat Kejanggalan','HAVEN Evidence +1'+(maya?' • Maya Trust +2':''),()=>{state.story.havenEvidence++;if(maya)maya.trust=clamp(maya.trust+2);closeModal()}],['Percaya Protokol','Moral +2'+(raka?' • Raka Trust +2':''),()=>{state.morale=clamp(state.morale+2);if(raka)raka.trust=clamp(raka.trust+2);closeModal()}]])
  else storyModal('Dead Air','Tidak ada handshake. Kanal tetap mati—tetapi noise-nya tidak sepenuhnya acak.',[['Dengarkan pasif','HAVEN Evidence +1',()=>{state.story.havenEvidence++;closeModal()}],['Biarkan kanal mati','Moral -1',()=>{state.morale=clamp(state.morale-1);closeModal()}]])}
@@ -241,10 +241,40 @@ function repair(){if(state.scrap<2)return toast('Komponen tidak cukup');state.sc
 function sleep(h){let lvl=state.upgrades.kasur;let healHr=[0,2.5,3.25,4][lvl],fatHr=[0,8,10,12][lvl];let mult=state.fatigue>=85?.75:state.fatigue>=65?.9:1;applyHealing(healHr*h*mult);state.fatigue=clamp(state.fatigue-fatHr*h);state.morale=clamp(state.morale+.35*h);objective('sleep');log('Tidur '+h+' jam.');advance(h,{sleep:true})}
 function craft(type){if(type==='filter'){let c=[0,3,2,1][state.upgrades.workbench];if(state.scrap<c)return toast('Komponen tidak cukup');state.scrap-=c;state.filters++;log('Membuat 1 Filter.');objective('craft')}else{let c=state.upgrades.workbench===3?3:4;if(state.scrap<c)return toast('Komponen tidak cukup');state.scrap-=c;state.integrity=clamp(state.integrity+15);log('Bunker plate dipasang. +15 Integritas');objective('craft')}AudioUI.craft();save();render()}
 function upgrade(key){let lvl=state.upgrades[key];if(lvl>=3)return;let c=lvl===1?5:9;if(state.scrap<c)return toast('Komponen tidak cukup');state.scrap-=c;state.upgrades[key]++;log('Upgrade '+key+' ke Lv'+state.upgrades[key]);AudioUI.hammer();vibrate(70);save();render()}
-function radioStory(){if(state.power<4)return toast('Daya tidak cukup');state.power-=4;objective('radio');state.story.transmissions++;if(state.day>=2&&!state.story.echoContact){storyModal('ECHO-7','“Jika ada yang hidup, balas singkat. Jangan kirim koordinat.”',[['Balas singkat','Moral +2'+(survivor('maya')?' • Maya Trust +2':''),()=>{state.story.echoResponse='reply';state.story.echoContact=true;state.morale=clamp(state.morale+2);const m=survivor('maya');if(m)m.trust=clamp(m.trust+2);state.progression.mainStage=7;closeModal()}],['Diam','Tetap anonim.',()=>{state.story.echoResponse='silent';state.story.echoContact=true;state.progression.mainStage=7;closeModal()}]])}
- else if(state.story.relayRecovered&&state.story.havenChoice===null){storyModal('HAVEN-3','Modul Relay membuka jaringan baru. Sistem meminta handshake.',[['Kirim Handshake','Moral +4'+(survivor('maya')?' • Maya Trust +3':'')+' • Depot terbuka besok',()=>{state.story.havenChoice='send';state.morale=clamp(state.morale+4);const m=survivor('maya');if(m)m.trust=clamp(m.trust+3);state.progression.mainStage=10;closeModal()}],['Simpan Kode','Moral +1 • tetap independen',()=>{state.story.havenChoice='keep';state.morale=clamp(state.morale+1);const m=survivor('maya');if(m)m.trust=clamp(m.trust-2);state.progression.mainStage=10;closeModal()}]])}
- else toast('Tidak ada transmisi story baru.');log('Radio story scan.');advance(1)}
-function radioRandom(){if(state.power<4)return toast('Daya tidak cukup');state.power-=4;objective('radio');const lines=['“Jangan menuju pusat kota.”','“Shelter tujuh... ulangi... shelter tujuh...”','“Air permukaan tidak aman.”','Nada berulang setiap 17 detik. Tidak ada suara manusia.'];log('Radio: '+lines[Math.floor(Math.random()*lines.length)]);advance(1)}
+function pushRadioArchive(label,text,kind='RX'){
+ const arr=Array.isArray(state.story.radioArchive)?state.story.radioArchive:(state.story.radioArchive=[]);
+ arr.unshift({day:state.day,hour:state.hour,label,text,kind});
+ state.story.radioArchive=arr.slice(0,20);
+}
+function radioSignalInfo(){
+ if(state.day>=2&&!state.story.echoContact)return {live:true,status:'SIGNAL DETECTED',label:'UNKNOWN / ECHO PATTERN',copy:'Pola terstruktur menembus noise. Sumber tidak mengirim koordinat.',actionTitle:'Sinyal Kehidupan Terdeteksi',actionCopy:'Transmission ini dapat menggerakkan Main Quest ECHO-7.'};
+ if(state.day>=3&&state.story.echoContact&&!state.story.relayUnlocked)return {live:true,status:'ECHO-7 PENDING',label:'ECHO-7 / RETURN CHANNEL',copy:'Kontak pertama sudah tercatat. Kanal ECHO-7 masih dipantau untuk koordinat berikutnya.',actionTitle:'Pantau Kanal ECHO-7',actionCopy:'Story progression berikutnya bergantung pada waktu dan state Chapter.'};
+ if(state.story.relayRecovered&&state.story.havenChoice===null)return {live:true,status:'NETWORK SIGNAL',label:'HAVEN-3 / RELAY LINK',copy:'Modul Relay membuka jaringan baru. Handshake belum diputuskan.',actionTitle:'Buka Jaringan HAVEN-3',actionCopy:'Transmission ini memicu keputusan handshake atau tetap independen.'};
+ if(state.day<2&&!state.story.echoContact)return {live:false,status:'LISTENING',label:'NO STRUCTURED SIGNAL',copy:'Radio hanya menangkap noise dan fragmen siaran. Bertahan sampai story window berikutnya.',actionTitle:'Cari Story Signal',actionCopy:'Belum ada story transmission terkonfirmasi pada state saat ini.'};
+ return {live:false,status:'DEAD AIR',label:'NO NEW STORY SIGNAL',copy:'Tidak ada transmission baru yang relevan dengan progression saat ini.',actionTitle:'Story Scan',actionCopy:'Scan tetap memakai 4 Daya dan 1 jam; hasil dapat berupa dead air.'};
+}
+function radioStory(){
+ if(state.power<4)return toast('Daya tidak cukup');
+ state.power-=4;objective('radio');state.story.transmissions++;
+ if(state.day>=2&&!state.story.echoContact){
+  pushRadioArchive('ECHO-7 // FIRST CONTACT','“Jika ada yang hidup, balas singkat. Jangan kirim koordinat.”','STORY');
+  storyModal('ECHO-7','“Jika ada yang hidup, balas singkat. Jangan kirim koordinat.”',[['Balas singkat','Moral +2'+(survivor('maya')?' • Maya Trust +2':''),()=>{state.story.echoResponse='reply';state.story.echoContact=true;state.morale=clamp(state.morale+2);const m=survivor('maya');if(m)m.trust=clamp(m.trust+2);state.progression.mainStage=7;closeModal()}],['Diam','Tetap anonim.',()=>{state.story.echoResponse='silent';state.story.echoContact=true;state.progression.mainStage=7;closeModal()}]]);
+ } else if(state.story.relayRecovered&&state.story.havenChoice===null){
+  pushRadioArchive('HAVEN-3 // HANDSHAKE','Modul Relay membuka jaringan baru. Sistem meminta handshake.','STORY');
+  storyModal('HAVEN-3','Modul Relay membuka jaringan baru. Sistem meminta handshake.',[['Kirim Handshake','Moral +4'+(survivor('maya')?' • Maya Trust +3':'')+' • Depot terbuka besok',()=>{state.story.havenChoice='send';state.morale=clamp(state.morale+4);const m=survivor('maya');if(m)m.trust=clamp(m.trust+3);state.progression.mainStage=10;closeModal()}],['Simpan Kode','Moral +1 • tetap independen',()=>{state.story.havenChoice='keep';state.morale=clamp(state.morale+1);const m=survivor('maya');if(m)m.trust=clamp(m.trust-2);state.progression.mainStage=10;closeModal()}]]);
+ } else {
+  pushRadioArchive('STORY SCAN // DEAD AIR','Tidak ada transmisi story baru pada state saat ini.','DEAD AIR');
+  toast('Tidak ada transmisi story baru.');
+ }
+ log('Radio story scan.');advance(1);
+}
+function radioRandom(){
+ if(state.power<4)return toast('Daya tidak cukup');
+ state.power-=4;objective('radio');
+ const lines=['“Jangan menuju pusat kota.”','“Shelter tujuh... ulangi... shelter tujuh...”','“Air permukaan tidak aman.”','Nada berulang setiap 17 detik. Tidak ada suara manusia.'];
+ const line=lines[Math.floor(Math.random()*lines.length)];
+ pushRadioArchive('RANDOM SCAN',line,'SCAN');log('Radio: '+line);advance(1);
+}
 function survivorTalk(id){const s=survivor(id);if(!s)return;if(s.lastTalkDay===state.day)return toast('Sudah bicara hari ini');s.lastTalkDay=state.day;s.trust=clamp(s.trust+4);state.morale=clamp(state.morale+2);if(state.survivors.length>1)state.relations.tension=clamp(state.relations.tension-3);log('Bicara dengan '+s.name);save();render()}
 function survivorFeed(id){const s=survivor(id);if(!s)return;if(!consumeAny('foods'))return toast('Makanan habis');s.trust=clamp(s.trust+7);state.morale=clamp(state.morale+3);state.relations.tension=clamp(state.relations.tension-4);log('Membagikan makanan ke '+s.name);save();render()}
 function survivorHelp(id){const s=survivor(id);if(!s||s.trust<50)return toast('Trust belum cukup');if(s.lastHelpDay===state.day)return toast('Sudah digunakan hari ini');s.lastHelpDay=state.day;if(id==='maya'){applyHealing(8);state.morale=clamp(state.morale+2);log('Maya memberi Bantuan Medis.')}else{state.power=clamp(state.power+8);state.morale=clamp(state.morale+1);log('Raka melakukan Tuning Generator.')}save();render()}
@@ -260,8 +290,8 @@ function formatSavedAt(ts){if(!ts)return 'BELUM TERCATAT';try{return new Intl.Da
 function saveDossier(){const s=load();if(!s)return `<div class="save-dossier empty"><div class="dossier-kicker">ACTIVE SAVE</div><strong>TIDAK ADA DATA</strong><p>Mulai Chapter 1 dari Hari 1 · 07:00.</p></div>`;const q=mainQuestFor(s.progression?.mainStage||1);return `<div class="save-dossier"><div class="dossier-top"><div><div class="dossier-kicker">ACTIVE SAVE // LOCAL</div><strong>${s.meta?.playerName||'PENGHUNI 7B'}</strong></div><span class="condition ${overallFor(s).toLowerCase()}">${overallFor(s)}</span></div><div class="save-grid"><div><small>HARI</small><b>${s.day}</b></div><div><small>WAKTU</small><b>${fmtHour(s.hour)}</b></div><div><small>LOKASI</small><b>${s.meta?.location||'Bunker 7B'}</b></div><div><small>LEVEL</small><b>${s.meta?.level??'—'}</b></div></div><div class="dossier-quest"><span>MAIN QUEST</span><b>${q[0]}</b></div><div class="dossier-foot">SAVE TERAKHIR // ${formatSavedAt(s.meta?.lastSavedAt)}</div></div>`}
 function mainQuestFor(p){return ({1:['Stabilkan Bunker',''],2:['Pastikan Daya Bertahan',''],3:['Lihat Dunia Luar',''],4:['Cari Sinyal',''],5:['Bertahan Sampai Malam',''],6:['Cari Sinyal Kehidupan',''],7:['Ikuti Petunjuk ECHO-7',''],8:['Pulihkan Komunikasi',''],9:['Aktifkan Modul / HAVEN',''],10:['Bertahan sampai finale',''],11:['Chapter 1 Complete','']})[p]||['Chapter 1 Complete','']}
 function overallFor(s){const c=(k,v)=>{const low=['hunger','thirst','fatigue','radiation'].includes(k);return low?(v>=80?'danger':v>=60?'warn':''):(v<=25?'danger':v<=45?'warn':'')};const vals=[c('health',s.health),c('hunger',s.hunger),c('thirst',s.thirst),c('fatigue',s.fatigue),c('morale',s.morale),c('radiation',s.radiation),c('power',s.power),c('integrity',s.integrity)];return vals.includes('danger')?'Kritis':vals.includes('warn')?'Waspada':'Aman'}
-function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.7 · DASHBOARD PASS · OFFLINE READY</div></div></div></main>`}
-function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.7 · LOCAL BUILD</div></main>`}
+function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.8 · RADIO STATION PASS · OFFLINE READY</div></div></div></main>`}
+function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.8 · LOCAL BUILD</div></main>`}
 
 function prologue(){
  const f=PROLOGUE_FRAMES[view.prologueFrame],n=view.prologueFrame+1;
@@ -312,8 +342,108 @@ function dashboard(){
  <section class="card objective-card"><div class="daily-progress"><i style="width:${done/3*100}%"></i></div>${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}<div class="daily-reward"><span>3/3 REWARD</span><b>+2 Komponen · +1 Filter</b></div></section>
  <div class="section-head"><h3>Activity Log</h3><span>4 terbaru</span></div>
  <section class="card log-card">${state.logs.length?state.logs.slice(0,4).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section>
- <div class="version">LOCKDOWN · PWA v0.7 · DASHBOARD PASS · OFFLINE</div>
+ <div class="version">LOCKDOWN · PWA v0.8 · RADIO STATION PASS · OFFLINE</div>
  </main>`;
+}
+function panel(){
+ const p=view.panel;
+ let title='';
+ let body='';
+ const res=`<div class="resource-row"><span class="pill">Komponen <b>${state.scrap}</b></span><span class="pill">Filter <b>${state.filters}</b></span><span class="pill">Daya <b>${Math.round(state.power)}</b></span></div>`;
+
+ if(p==='gudang'){
+  title='Gudang';
+  const foods=Object.entries(state.items.foods).filter(([,x])=>x.qty>0).map(([id,x])=>`<div class="item"><b>${x.name}</b><div class="qty">×${x.qty}</div><p>${id==='snack'?'Lapar -12 · Moral +2':'Lapar -28 · Haus +4 · Moral +1'}</p><button class="btn" data-use-food="${id}">GUNAKAN</button></div>`).join('')||'<div class="card">Persediaan makanan kosong.</div>';
+  const drinks=Object.entries(state.items.drinks).filter(([,x])=>x.qty>0).map(([id,x])=>`<div class="item"><b>${x.name}</b><div class="qty">×${x.qty}</div><p>${id==='water'?'Haus -28':'Haus -8 · Fatigue -18 · Moral +2 · crash 3h'}</p><button class="btn" data-use-drink="${id}">MINUM</button></div>`).join('')||'<div class="card">Persediaan minuman kosong.</div>';
+  body=`<p class="hero-line">Inventory contextual: food dan minuman. Item dengan qty 0 hilang dari daftar.</p>${res}<div class="section-head"><h3>Food</h3><span>${totalFood()} item</span></div><div class="item-grid">${foods}</div><div class="section-head"><h3>Drinks</h3><span>${totalDrink()} item</span></div><div class="item-grid">${drinks}</div>`;
+ }
+
+ if(p==='generator'){
+  title='Generator';
+  const raka=survivor('raka');
+  const gain=[0,35,42,50][state.upgrades.generator]+(raka&&raka.trust>=40?5:0);
+  body=`<p class="hero-line">Drain saat ini ±${genDrain().toFixed(2)} daya/jam. Fuel mengisi +${gain} daya.</p>${res}<div class="action-list"><button class="action ${qty('fuel.fuel')?'':'disabled'}" data-act="fuel"><div class="action-top"><div class="grow"><b>Gunakan Fuel</b><p>Isi ulang generator.</p></div><strong>×${qty('fuel.fuel')}</strong></div><div class="costs"><span class="cost">+${gain} Daya</span><span class="cost">0 jam</span></div>${qty('fuel.fuel')?'':'<div class="reason">Fuel habis.</div>'}</button>${upgradeCard('generator','Generator')}</div>`;
+ }
+
+ if(p==='medis'){
+  title='Medis';
+  const heal=28+(state.upgrades.medis-1)*5+(survivor('maya')?8:0);
+  body=`<p class="hero-line">Obat menyembuhkan Health dan menurunkan radiasi. Upgrade dan skill Maya stack.</p>${res}<div class="action-list"><button class="action ${qty('meds.med')?'':'disabled'}" data-act="med"><b>Obat Darurat ×${qty('meds.med')}</b><p>Gunakan satu dosis.</p><div class="costs"><span class="cost">Health +${heal}</span><span class="cost">Radiasi -8</span></div></button>${upgradeCard('medis','Medis')}</div>`;
+ }
+
+ if(p==='kasur'){
+  title='Kasur';
+  body=`<p class="hero-line">Tidur memulihkan fatigue dan health. Lapar/haus tetap berjalan.</p>${res}<div class="range-wrap"><div class="range-top"><span>Durasi Tidur</span><span id="sleepLabel">4 jam</span></div><input id="sleepRange" type="range" min="1" max="8" value="4"/><button class="btn primary" data-act="sleep">TIDUR</button></div><div class="action-list" style="margin-top:10px">${upgradeCard('kasur','Kasur')}</div>`;
+ }
+
+ if(p==='security'){
+  title='Keamanan';
+  const c=[0,5,4,3][state.upgrades.keamanan];
+  const rep=[0,10,13,16][state.upgrades.keamanan];
+  body=`<p class="hero-line">Scan memberi -2 radiasi untuk semua ekspedisi hari ini. Repair memulihkan integritas bunker.</p>${res}<div class="action-list"><button class="action ${state.power>=c?'':'disabled'}" data-act="scan"><b>Pindai Area Luar</b><p>${state.world.scoutedDay===state.day?'Area hari ini sudah dipindai.':'Buka data kondisi permukaan.'}</p><div class="costs"><span class="cost">${c} Daya</span><span class="cost">+1 jam</span><span class="cost">Expedition Rad -2</span></div></button><button class="action ${state.scrap>=2?'':'disabled'}" data-act="repair"><b>Repair Bunker</b><p>Perkuat struktur dari station keamanan.</p><div class="costs"><span class="cost">2 Komponen</span><span class="cost">Bunker +${rep}</span></div></button>${upgradeCard('keamanan','Keamanan')}</div>`;
+ }
+
+ if(p==='workbench'){
+  title='Meja Kerja';
+  const fc=[0,3,2,1][state.upgrades.workbench];
+  const pc=state.upgrades.workbench===3?3:4;
+  body=`<p class="hero-line">Crafting dan gateway upgrade bunker.</p>${res}<div class="action-list"><button class="action ${state.scrap>=fc?'':'disabled'}" data-craft="filter"><b>Craft Filter</b><p>Untuk event ventilasi dan risiko radiasi.</p><div class="costs"><span class="cost">${fc} Komponen</span><span class="cost">+1 Filter</span></div></button><button class="action ${state.scrap>=pc?'':'disabled'}" data-craft="plate"><b>Craft Bunker Plate</b><p>Perkuat integritas.</p><div class="costs"><span class="cost">${pc} Komponen</span><span class="cost">Bunker +15</span></div></button>${upgradeCard('workbench','Meja Kerja')}</div>`;
+ }
+
+ if(p==='radio'){
+  title='Radio';
+  const signal=radioSignalInfo();
+  const archive=Array.isArray(state.story.radioArchive)?state.story.radioArchive:[];
+  const wave=[28,48,72,38,64,88,42,58,82,34,70,52,92,46,68,32,76,56,84,40,62,90,50,72].map(h=>`<i style="--h:${h}%"></i>`).join('');
+  const archiveHtml=archive.length?archive.slice(0,8).map((x,i)=>`<div class="radio-archive-row"><div class="radio-archive-meta"><span>${x.kind||'RX'}</span><time>D${x.day} ${fmtHour(x.hour)}</time></div><b>${x.label}</b><p>${x.text}</p></div>`).join(''):`<div class="radio-empty"><span>NO STORED SIGNAL</span><p>Belum ada hasil scan atau transmission yang tersimpan di Radio Archive.</p></div>`;
+  body=`<section class="radio-console">
+   <div class="radio-console-top"><div><span class="radio-kicker">BUNKER 7B // RADIO</span><strong>RX AUTO-SCAN</strong></div><div class="radio-led ${signal.live?'live':''}"><i></i>${signal.status}</div></div>
+   <div class="radio-wave" aria-hidden="true">${wave}</div>
+   <div class="radio-readout"><span>CHANNEL</span><b>${signal.label}</b><p>${signal.copy}</p></div>
+   <div class="radio-telemetry"><span><small>DAYA</small><b>${Math.round(state.power)}%</b></span><span><small>COST / SCAN</small><b>4 DAYA</b></span><span><small>WAKTU</small><b>+1 JAM</b></span></div>
+  </section>
+  <div class="section-head radio-section-head"><h3>Transmission Control</h3><span>mekanik terlihat sebelum aksi</span></div>
+  <div class="radio-actions">
+   <button class="radio-action story ${state.power>=4?'':'disabled'}" data-act="radio-story" ${state.power>=4?'':'disabled'}><div class="radio-action-icon">◉</div><div class="grow"><span>STORY TRANSMISSION</span><b>${signal.actionTitle}</b><p>${signal.actionCopy}</p><div class="costs"><span class="cost">4 Daya</span><span class="cost">+1 jam</span><span class="cost">Story state</span></div>${state.power<4?'<div class="reason">Daya tidak cukup.</div>':''}</div></button>
+   <button class="radio-action scan ${state.power>=4?'':'disabled'}" data-act="radio-random" ${state.power>=4?'':'disabled'}><div class="radio-action-icon">⌁</div><div class="grow"><span>RANDOM SCAN</span><b>Pindai Frekuensi Permukaan</b><p>Cari noise, peringatan, atau fragmen siaran yang tidak menggerakkan Main Quest.</p><div class="costs"><span class="cost">4 Daya</span><span class="cost">+1 jam</span><span class="cost">Flavor signal</span></div>${state.power<4?'<div class="reason">Daya tidak cukup.</div>':''}</div></button>
+  </div>
+  <div class="section-head radio-section-head"><h3>Radio Archive</h3><span>${archive.length} tersimpan · ${state.story.transmissions} story scan</span></div>
+  <section class="radio-archive">${archiveHtml}</section>
+  <section class="radio-story-state"><div><small>ECHO-7</small><b>${state.story.echoResponse||'BELUM ADA RESPONS'}</b></div><div><small>RELAY</small><b>${state.story.relayRecovered?'RECOVERED':state.story.relayUnlocked?'COORDINATES':'—'}</b></div><div><small>HAVEN-3</small><b>${state.story.havenChoice||'—'}</b></div><div><small>EVIDENCE</small><b>${state.story.havenEvidence}</b></div></section>`;
+ }
+
+ if(p==='expedition'){
+  title='Ekspedisi';
+  const ok=state.health>35&&state.fatigue<75&&state.radiation<70&&state.hunger<82&&state.thirst<82;
+  const warning=ok?'':'<div class="card"><b>Lanjut Jelajah nonaktif.</b><p class="hero-line">Butuh Health >35, Fatigue <75, Rad <70, Hunger <82, Thirst <82.</p></div>';
+  const locations=Object.entries(LOCS).filter(([id])=>state.world.unlocked.includes(id)).map(([id,l])=>{
+   const scout=state.world.scoutedDay===state.day?'<span class="cost">Scout -2 Rad</span>':'';
+   return `<div class="location"><div class="location-top"><b>${l.name}</b><span class="risk ${l.risk.toLowerCase()}">${l.risk}</span></div><p>${l.focus}</p><div class="costs"><span class="cost">${l.time} jam</span><span class="cost">Base Rad ${l.rad}</span>${scout}</div><button class="btn ${id==='relay'?'primary':''}" data-exp="${id}" ${ok?'':'disabled'}>MULAI EKSPEDISI</button></div>`;
+  }).join('');
+  body=`<p class="hero-line">Pilih lokasi, baca waktu/radiasi/risk, lalu bawa loot pulang. Security scan mengurangi radiasi hari ini.</p>${res}${warning}<div>${locations}</div>`;
+ }
+
+ if(p==='survivor'){
+  title='Survivor';
+  const s=survivor(view.survivorId)||state.survivors[0];
+  if(s){
+   const trustLabel=s.trust>=70?'Percaya':s.trust>=45?'Netral':s.trust>=25?'Waspada':'Curiga';
+   body=`<div class="card"><div class="survivor"><div class="avatar">${s.name[0]}</div><div class="grow"><b>${s.name}</b><small>${s.role} · ${s.personality}</small></div><div class="trust">${Math.round(s.trust)}</div></div><p class="hero-line">Skill: ${s.skill}. Trust: ${trustLabel}.</p></div><div class="action-list"><button class="action" data-talk="${s.id}"><b>Bicara</b><p>Trust +4 · Moral +2 · sekali/hari.</p></button><button class="action" data-feed="${s.id}"><b>Bagikan Makanan</b><p>Consume 1 makanan · Trust +7 · Moral +3.</p></button><button class="action ${s.trust>=50?'':'disabled'}" data-help="${s.id}"><b>${s.id==='maya'?'Bantuan Medis':'Tuning Generator'}</b><p>${s.id==='maya'?'Health +8 · Moral +2':'Daya +8 · Moral +1'} · Trust 50+ · sekali/hari.</p></button></div>`;
+  } else body='<div class="card">Belum ada survivor.</div>';
+ }
+
+ if(p==='archive'){
+  title='Story Archive';
+  const visited=state.world.visited.map(x=>LOCS[x]?.name||x).join(', ')||'—';
+  body=`<div class="card"><div class="log">Chapter: ${state.story.chapterComplete?'1 Complete':'1 In Progress'}</div><div class="log">Transmission: ${state.story.transmissions}</div><div class="log">HAVEN Evidence: ${state.story.havenEvidence}</div><div class="log">Finale Choice: ${state.story.finaleChoice||'—'}</div><div class="log">Visited: ${visited}</div></div><button class="btn" data-act="replay-prologue">REPLAY PROLOGUE</button>`;
+ }
+
+ if(p==='settings'){
+  title='Settings';
+  body=settingsPanel();
+ }
+
+ return `<main class="screen panel ${p==='radio'?'radio-panel':''}"><header class="panel-head ${p==='radio'?'radio-head':''}"><button class="back" data-act="back">←</button><div class="grow"><h1>${title}</h1>${p==='radio'?'<span>COMMUNICATION STATION // OFFLINE ARCHIVE</span>':''}</div><small>D${state.day} ${fmtHour()}</small></header>${body}</main>`;
 }
 function upgradeCard(key,label){let lvl=state.upgrades[key],cost=lvl===1?5:lvl===2?9:0;return `<button class="action ${lvl>=3||state.scrap<cost?'disabled':''}" data-upgrade="${key}" ${lvl>=3?'disabled':''}><b>${label} Lv${lvl} ${lvl>=3?'· MAX':'→ Lv'+(lvl+1)}</b><p>${lvl>=3?'Upgrade Maksimum. Tetap terlihat sebagai state MAX.':'Tingkatkan efisiensi station.'}</p><div class="costs"><span class="cost">${lvl>=3?'MAX':cost+' Komponen'}</span></div>${lvl<3&&state.scrap<cost?'<div class="reason">Komponen tidak cukup.</div>':''}</button>`}
 function settingsPanel(){const range=(key,label)=>`<label class="setting-range"><span>${label}<b id="${key}Label">${state.settings[key]}</b></span><input type="range" min="0" max="100" value="${state.settings[key]}" data-volume="${key}"></label>`;return `<div class="card setting-card"><div class="objective"><span>SFX</span><span style="margin-left:auto"><input type="checkbox" data-setting="sfx" ${state.settings.sfx?'checked':''}></span></div><div class="objective"><span>Ambience</span><span style="margin-left:auto"><input type="checkbox" data-setting="ambience" ${state.settings.ambience?'checked':''}></span></div><div class="objective"><span>Vibration</span><span style="margin-left:auto"><input type="checkbox" data-setting="vibration" ${state.settings.vibration?'checked':''}></span></div></div><div class="card setting-card">${range('master','Master Volume')}${range('sfxVol','SFX Volume')}${range('ambienceVol','Ambience Volume')}</div><p class="settings-note">Ambience memakai Bunker AMBIENCE.wav dengan crossfade-loop selama gameplay. Radio/Craft/Heal tetap memakai SFX asset lokal; Heal hanya memainkan detik 9–11.</p><button class="btn" style="width:100%;margin-bottom:8px" data-act="to-menu">MAIN MENU</button><button class="btn danger" style="width:100%" data-act="restart">RESTART GAME</button>`}

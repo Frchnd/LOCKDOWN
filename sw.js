@@ -1,4 +1,4 @@
-const CACHE='lockdown-pwa-v7-dashboard-pass';
+const CACHE='lockdown-pwa-v8-radio-station-pass';
 const CORE=[
  './','./index.html','./app.css','./app.js','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',

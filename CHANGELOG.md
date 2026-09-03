@@ -1,14 +1,10 @@
-# LOCKDOWN PWA Changelog
+# LOCKDOWN PWA v0.8 — Radio Station Pass
 
-## v0.7 — Dashboard UI Pass
-- Main Quest diubah menjadi command card dominan dengan stage progress.
-- Header menampilkan Hari, jam, kondisi bunker, world condition, dan tombol Lewati 1 Jam yang lebih jelas.
-- Daya/Bunker/Radiasi diberi quick status strip.
-- Delapan stat sekarang punya state label STABIL/WASPADA/KRITIS dan petunjuk arah nilai.
-- Station grid 2×4 dipoles menjadi terminal bunker; onboarding objective aktif disorot.
-- Station terkunci menampilkan alasan lock, bukan sekadar faded.
-- Survivor/tension dibuat lebih ringkas.
-- Daily Objective punya progress + reward preview.
-- Activity Log dibatasi empat entri terbaru untuk mengurangi kepadatan dashboard.
-- Cache PWA naik ke v7.
-- Save key tetap lockdown_save; save v0.6 tetap kompatibel.
+- Restored full-panel station renderer accidentally omitted in v0.7.
+- Radio redesigned as a dedicated bunker communication console.
+- Added live signal state, waveform treatment, mechanical cost/time telemetry, and clearer Story vs Random Scan actions.
+- Added local Radio Archive entries for scans and story transmissions.
+- Day 3 ECHO-7 Relay coordinates are archived automatically.
+- Existing `lockdown_save` remains compatible; `radioArchive` is filled through save validation defaults.
+- Radio Static SFX behavior remains tied to opening/closing Radio.
+- Service worker cache bumped to v8.

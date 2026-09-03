@@ -1,10 +1,13 @@
-LOCKDOWN PWA v0.7 — UPDATE ONLY
+LOCKDOWN PWA v0.8 — UPDATE ONLY
 
-Replace di root GitHub repo:
-- app.css
+Replace these files in the root of your existing GitHub Pages repository:
 - app.js
+- app.css
 - sw.js
 
-Jangan hapus assets/audio/ atau asset prologue/menu yang sudah ada.
-Setelah deploy selesai, tutup PWA sepenuhnya lalu buka lagi agar cache v7 aktif.
-Save lama tetap memakai lockdown_save.
+CHANGELOG.md is informational.
+
+This package intentionally does NOT contain assets/audio, prologue images, menu background, manifest, or icons.
+Your existing SFX and Bunker AMBIENCE files stay untouched.
+
+After GitHub Pages deploys, fully close and reopen the installed PWA so cache v8 takes control.
