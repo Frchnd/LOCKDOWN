@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v13-power-workbench-pass';
+const CACHE='lockdown-pwa-v14-expedition-core';
 const CORE=[
- './','./index.html','./app.css?v=0.13','./app.js?v=0.13','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.14','./app.js?v=0.14','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',

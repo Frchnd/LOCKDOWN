@@ -28,7 +28,7 @@ const PROLOGUE_FRAMES=[
  {title:'Bertahan Bukan Tujuan Akhir',text:'Bunker hanya membeli waktu. Bertahan cukup lama untuk memahami permukaan, mencari sinyal kehidupan, dan menemukan apakah masih ada tempat aman.',image:'./assets/prologue/prologue_07_command.webp'}
 ];
 function preloadPrologue(){PROLOGUE_FRAMES.forEach(f=>{const img=new Image();img.decoding='async';img.src=f.image})}
-let state=null, view={screen:'menu',panel:null,modal:null,prologueFrame:0};
+let state=null, view={screen:'menu',panel:null,modal:null,prologueFrame:0,expeditionResult:null};
 let installPrompt=null;
 const isStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
 
@@ -405,9 +405,91 @@ function radioRandom(){
 function survivorTalk(id){const s=survivor(id);if(!s)return;if(s.lastTalkDay===state.day)return toast('Sudah bicara hari ini');s.lastTalkDay=state.day;s.trust=clamp(s.trust+4);state.morale=clamp(state.morale+2);if(state.survivors.length>1)state.relations.tension=clamp(state.relations.tension-3);log('Bicara dengan '+s.name);save();render()}
 function survivorFeed(id){const s=survivor(id);if(!s)return;if(!consumeAny('foods'))return toast('Makanan habis');s.trust=clamp(s.trust+7);state.morale=clamp(state.morale+3);state.relations.tension=clamp(state.relations.tension-4);log('Membagikan makanan ke '+s.name);save();render()}
 function survivorHelp(id){const s=survivor(id);if(!s||s.trust<50)return toast('Trust belum cukup');if(s.lastHelpDay===state.day)return toast('Sudah digunakan hari ini');s.lastHelpDay=state.day;if(id==='maya'){applyHealing(8);state.morale=clamp(state.morale+2);log('Maya memberi Bantuan Medis.')}else{state.power=clamp(state.power+8);state.morale=clamp(state.morale+1);log('Raka melakukan Tuning Generator.')}save();render()}
-function expedition(id){const l=LOCS[id];if(!l||!state.world.unlocked.includes(id))return;if(state.health<=35||state.fatigue>=75||state.radiation>=70||state.hunger>=82||state.thirst>=82)return toast('Kondisi tidak layak untuk ekspedisi');if(id==='relay')return relayMission();let extra=id==='metro'?4:id==='clinic'?2:0;let rad=l.rad+worldCond().rad+extra-(state.world.scoutedDay===state.day?2:0);state.radiation=clamp(state.radiation+rad);advance(l.time,{expedition:true});if(isGameOver())return;rollLoot(id);fatigueRisk();state.world.visited.push(id);objective('expedition');if(id==='clinic'){const m=survivor('maya');if(m&&!m.sideQuestDone){m.sideQuestDone=true;m.trust=clamp(m.trust+10);state.morale=clamp(state.morale+3);log('SIDE selesai: Jejak Klinik.')}}if(id==='garage'){const r=survivor('raka');if(r&&!r.sideQuestDone){r.sideQuestDone=true;r.trust=clamp(r.trust+10);state.scrap+=2;log('SIDE selesai: Suku Cadang Lama.')}}if(id==='depot'){state.story.depotVisited=true;state.story.havenEvidence++;log('Depot Darurat ditemukan. HAVEN Evidence +1.')}save();render();randomEmergency()}
-function fatigueRisk(){let dmg=0;if(state.fatigue>=85)dmg+=7;else if(state.fatigue>=70&&Math.random()<.5)dmg+=5;if(state.morale<25&&Math.random()<.35)dmg+=4;if(dmg){state.health=clamp(state.health-dmg);state.morale=clamp(state.morale-2);log('Cedera ekspedisi: Health -'+dmg);damageFx()}}
-function rollLoot(id){let got=false;const add=(cat,key,n=1)=>{addQty(cat,key,n);got=true};switch(id){case'house':state.scrap+=2;Math.random()<.7&&add('foods','snack');break;case'market':add('foods','can',1);add('drinks','water',1);break;case'clinic':add('meds','med',1);if(Math.random()<.6)state.filters++;break;case'apartment':state.scrap++;add('drinks','water');break;case'gas':add('fuel','fuel');if(Math.random()<.6)add('foods','snack');break;case'fire':state.filters++;add('drinks','water');break;case'garage':state.scrap+=2;add('fuel','fuel');break;case'water':add('drinks','water',2);state.filters++;break;case'metro':state.scrap+=3;add('meds','med');add('fuel','fuel');break;case'depot':state.scrap+=2;add('foods','can');add('drinks','water');break;}state.morale=clamp(state.morale+(got?3:-3));log(got?'Ekspedisi membawa loot.':'Tidak ada loot yang berarti.')}
+function expeditionReadiness(){
+ const checks=[
+  {key:'health',label:'Health',value:state.health,ok:state.health>35,rule:'> 35'},
+  {key:'fatigue',label:'Fatigue',value:state.fatigue,ok:state.fatigue<75,rule:'< 75'},
+  {key:'radiation',label:'Radiasi',value:state.radiation,ok:state.radiation<70,rule:'< 70'},
+  {key:'hunger',label:'Lapar',value:state.hunger,ok:state.hunger<82,rule:'< 82'},
+  {key:'thirst',label:'Haus',value:state.thirst,ok:state.thirst<82,rule:'< 82'}
+ ];
+ return {checks,ok:checks.every(x=>x.ok)};
+}
+function isLocationUnlocked(id){
+ const l=LOCS[id];if(!l)return false;
+ if(id==='relay')return !!state.story.relayUnlocked;
+ if(id==='depot')return state.story.havenChoice==='send'&&state.day>=4;
+ return state.day>=l.unlock;
+}
+function locationUnlockReason(id){
+ const l=LOCS[id];if(!l)return 'Lokasi tidak tersedia.';
+ if(id==='relay')return state.story.relayUnlocked?'Koordinat ECHO-7 diterima.':'Dibuka oleh Main Quest ECHO-7.';
+ if(id==='depot')return state.story.havenChoice==='send'?(state.day>=4?'HAVEN cache tersedia.':'Tersedia mulai Hari 4.'):'Dibuka melalui jalur HAVEN-3.';
+ return state.day>=l.unlock?'TERSEDIA':`Terbuka pada Hari ${l.unlock}.`;
+}
+function expeditionRadiation(id){
+ const l=LOCS[id],wc=worldCond(),scout=state.world.scoutedDay===state.day?2:0;
+ const total=Math.max(0,(l?.rad||0)+(Number(wc.rad)||0)-scout);
+ return {base:l?.rad||0,world:Number(wc.rad)||0,scout,total};
+}
+function expeditionTravelPreview(id){
+ const l=LOCS[id],wc=worldCond(),hours=l?.time||0;
+ let hunger=state.hunger,thirst=state.thirst,fatigue=state.fatigue,power=state.power,health=state.health,rad=state.radiation;
+ let gh=globalHour();
+ const r=expeditionRadiation(id);rad=clamp(rad+r.total);
+ for(let i=0;i<hours;i++){
+  hunger=clamp(hunger+2.2);thirst=clamp(thirst+3+wc.thirst);power=clamp(power-genDrain());
+  let f=3.35+wc.fatigue+moraleFatigue();if(gh+i<state.flags.coffeeCrashUntil)f+=1.5;fatigue=clamp(fatigue+f);
+  if(state.integrity<50)rad=clamp(rad+.6);
+  if(hunger>85)health=clamp(health-1);if(thirst>88)health=clamp(health-2);if(fatigue>=92)health=clamp(health-1);if(rad>75)health=clamp(health-1);if(rad>90)health=clamp(health-1);
+ }
+ return {hours,radiation:r,before:{health:state.health,hunger:state.hunger,thirst:state.thirst,fatigue:state.fatigue,power:state.power,radiation:state.radiation},after:{health,hunger,thirst,fatigue,power,radiation:rad}};
+}
+function expedition(id){
+ const l=LOCS[id];if(!l)return;
+ if(!isLocationUnlocked(id))return toast(locationUnlockReason(id));
+ const ready=expeditionReadiness();if(!ready.ok)return toast('Kondisi belum memenuhi syarat ekspedisi');
+ const p=expeditionTravelPreview(id),r=p.radiation;
+ view.modal={title:'Konfirmasi Ekspedisi',text:`${l.name} • ${l.time} jam • estimasi Radiasi +${Math.round(r.total)}. World ${r.world>=0?'+':''}${r.world}${r.scout?' • Scout -2':''}.`,choices:[['BERANGKAT',`Risk ${l.risk} • ${l.focus}`,()=>{closeModal();startExpedition(id)}],['BATAL','Kembali ke daftar lokasi.',closeModal]]};render();
+}
+function startExpedition(id){
+ const l=LOCS[id];if(!l||!isLocationUnlocked(id))return;
+ const ready=expeditionReadiness();if(!ready.ok)return toast('Kondisi berubah. Ekspedisi dibatalkan.');
+ if(id==='relay')return relayMission();
+ const started={day:state.day,hour:state.hour,health:state.health,hunger:state.hunger,thirst:state.thirst,fatigue:state.fatigue,morale:state.morale,radiation:state.radiation,power:state.power};
+ const rad=expeditionRadiation(id);state.radiation=clamp(state.radiation+rad.total);
+ advance(l.time,{expedition:true});
+ if(isGameOver()){save();render();return;}
+ const loot=rollLoot(id),injury=fatigueRisk();
+ if(!state.world.visited.includes(id))state.world.visited.push(id);
+ objective('expedition');
+ const extras=[];
+ if(id==='clinic'){const m=survivor('maya');if(m&&!m.sideQuestDone){m.sideQuestDone=true;m.trust=clamp(m.trust+10);state.morale=clamp(state.morale+3);extras.push('SIDE selesai: Jejak Klinik');log('SIDE selesai: Jejak Klinik.')}}
+ if(id==='garage'){const r=survivor('raka');if(r&&!r.sideQuestDone){r.sideQuestDone=true;r.trust=clamp(r.trust+10);state.scrap+=2;loot.items.push('+2 Komponen (Side Quest)');extras.push('SIDE selesai: Suku Cadang Lama');log('SIDE selesai: Suku Cadang Lama.')}}
+ if(id==='depot'){state.story.depotVisited=true;state.story.havenEvidence++;extras.push('HAVEN Evidence +1');log('Depot Darurat ditemukan. HAVEN Evidence +1.')}
+ view.expeditionResult={id,name:l.name,time:l.time,risk:l.risk,started,ended:{day:state.day,hour:state.hour,health:state.health,hunger:state.hunger,thirst:state.thirst,fatigue:state.fatigue,morale:state.morale,radiation:state.radiation,power:state.power},rad,loot:loot.items,injury,extras};
+ save();view.panel='expedition';render();randomEmergency();
+}
+function fatigueRisk(){let dmg=0;if(state.fatigue>=85)dmg+=7;else if(state.fatigue>=70&&Math.random()<.5)dmg+=5;if(state.morale<25&&Math.random()<.35)dmg+=4;if(dmg){state.health=clamp(state.health-dmg);state.morale=clamp(state.morale-2);log('Cedera ekspedisi: Health -'+dmg);damageFx()}return dmg}
+function rollLoot(id){
+ let got=false;const items=[];
+ const add=(cat,key,n=1)=>{addQty(cat,key,n);got=true;items.push(`+${n} ${state.items[cat]?.[key]?.name||key}`)};
+ const scrap=n=>{state.scrap+=n;got=true;items.push(`+${n} Komponen`)};
+ const filter=n=>{state.filters+=n;got=true;items.push(`+${n} Filter`)};
+ switch(id){
+  case'house':scrap(2);if(Math.random()<.7)add('foods','snack');break;
+  case'market':add('foods','can',1);add('drinks','water',1);break;
+  case'clinic':add('meds','med',1);if(Math.random()<.6)filter(1);break;
+  case'apartment':scrap(1);add('drinks','water');break;
+  case'gas':add('fuel','fuel');if(Math.random()<.6)add('foods','snack');break;
+  case'fire':filter(1);add('drinks','water');break;
+  case'garage':scrap(2);add('fuel','fuel');break;
+  case'water':add('drinks','water',2);filter(1);break;
+  case'metro':scrap(3);add('meds','med');add('fuel','fuel');break;
+  case'depot':scrap(2);add('foods','can');add('drinks','water');break;
+ }
+ state.morale=clamp(state.morale+(got?3:-3));log(got?'Ekspedisi membawa loot.':'Tidak ada loot yang berarti.');return {got,items};
+}
 function relayMission(){storyModal('Stasiun Relay — Stage 1','Pintu utama tidak merespons. Pilih cara masuk.',[['Pulihkan Daya Pintu','Cost 4 Daya • aman',()=>{if(state.power<4)return toast('Daya tidak cukup');state.power-=4;relayStage2()}],['Paksa Pintu Maintenance','30% chance Health -4',()=>{if(Math.random()<.3){state.health=clamp(state.health-4);damageFx()}relayStage2()}],['Ikuti Jalur Kabel Luar','+1 Komponen • risiko radiasi lebih tinggi',()=>{state.scrap++;state.radiation=clamp(state.radiation+4);relayStage2()}]])}
 function relayStage2(){view.modal={title:'Stasiun Relay — Ruang Kontrol',text:'Modul relay masih utuh. Ada log jaringan dan server cadangan yang belum mati.',choices:[['Ambil Modul Sekarang','+2 Komponen • risiko rendah',()=>relayFinish('quick')],['Salin Log','HAVEN Evidence +1 • +3 Komponen • 18% injury • extra Rad 4',()=>relayFinish('logs')],['Server Cadangan','+5 Komponen • 50% Filter • 38% injury • extra Rad 6',()=>relayFinish('server')]]};render()}
 function relayFinish(mode){if(mode==='quick')state.scrap+=2;if(mode==='logs'){state.scrap+=3;state.story.havenEvidence++;state.radiation=clamp(state.radiation+4);if(Math.random()<.18)state.health=clamp(state.health-5)}if(mode==='server'){state.scrap+=5;state.radiation=clamp(state.radiation+6);if(Math.random()<.5)state.filters++;if(Math.random()<.38)state.health=clamp(state.health-8)}state.story.relayRecovered=true;state.progression.mainStage=9;state.world.visited.push('relay');objective('expedition');log('Modul Relay berhasil dibawa pulang.');closeModal();advance(LOCS.relay.time,{expedition:true})}
@@ -417,8 +499,8 @@ function formatSavedAt(ts){if(!ts)return 'BELUM TERCATAT';try{return new Intl.Da
 function saveDossier(){const s=load();if(!s)return `<div class="save-dossier empty"><div class="dossier-kicker">ACTIVE SAVE</div><strong>TIDAK ADA DATA</strong><p>Mulai Chapter 1 dari Hari 1 · 07:00.</p></div>`;const q=mainQuestFor(s.progression?.mainStage||1);return `<div class="save-dossier"><div class="dossier-top"><div><div class="dossier-kicker">ACTIVE SAVE // LOCAL</div><strong>${s.meta?.playerName||'PENGHUNI 7B'}</strong></div><span class="condition ${overallFor(s).toLowerCase()}">${overallFor(s)}</span></div><div class="save-grid"><div><small>HARI</small><b>${s.day}</b></div><div><small>WAKTU</small><b>${fmtHour(s.hour)}</b></div><div><small>LOKASI</small><b>${s.meta?.location||'Bunker 7B'}</b></div><div><small>LEVEL</small><b>${s.meta?.level??'—'}</b></div></div><div class="dossier-quest"><span>MAIN QUEST</span><b>${q[0]}</b></div><div class="dossier-foot">SAVE TERAKHIR // ${formatSavedAt(s.meta?.lastSavedAt)}</div></div>`}
 function mainQuestFor(p){return ({1:['Stabilkan Bunker',''],2:['Pastikan Daya Bertahan',''],3:['Lihat Dunia Luar',''],4:['Cari Sinyal',''],5:['Bertahan Sampai Malam',''],6:['Cari Sinyal Kehidupan',''],7:['Ikuti Petunjuk ECHO-7',''],8:['Pulihkan Komunikasi',''],9:['Aktifkan Modul / HAVEN',''],10:['Bertahan sampai finale',''],11:['Chapter 1 Complete','']})[p]||['Chapter 1 Complete','']}
 function overallFor(s){const c=(k,v)=>{const low=['hunger','thirst','fatigue','radiation'].includes(k);return low?(v>=80?'danger':v>=60?'warn':''):(v<=25?'danger':v<=45?'warn':'')};const vals=[c('health',s.health),c('hunger',s.hunger),c('thirst',s.thirst),c('fatigue',s.fatigue),c('morale',s.morale),c('radiation',s.radiation),c('power',s.power),c('integrity',s.integrity)];return vals.includes('danger')?'Kritis':vals.includes('warn')?'Waspada':'Aman'}
-function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.13 · POWER & WORKBENCH PASS</div></div></div></main>`}
-function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.13 · POWER & WORKBENCH PASS</div></main>`}
+function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.14 · EXPEDITION CORE</div></div></div></main>`}
+function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.14 · EXPEDITION CORE</div></main>`}
 
 function prologue(){
  const f=PROLOGUE_FRAMES[view.prologueFrame],n=view.prologueFrame+1;
@@ -469,7 +551,7 @@ function dashboard(){
  <section class="card objective-card"><div class="daily-progress"><i style="width:${done/3*100}%"></i></div>${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}<div class="daily-reward"><span>3/3 REWARD</span><b>+2 Komponen · +1 Filter</b></div></section>
  <div class="section-head"><h3>Activity Log</h3><span>4 terbaru</span></div>
  <section class="card log-card">${state.logs.length?state.logs.slice(0,4).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section>
- <div class="version">LOCKDOWN · PWA v0.13 · POWER & WORKBENCH PASS</div>
+ <div class="version">LOCKDOWN · PWA v0.14 · EXPEDITION CORE</div>
  </main>`;
 }
 function sleepDeltaLabel(key,b,a){
@@ -636,13 +718,16 @@ function panel(){
 
  if(p==='expedition'){
   title='Ekspedisi';
-  const ok=state.health>35&&state.fatigue<75&&state.radiation<70&&state.hunger<82&&state.thirst<82;
-  const warning=ok?'':'<div class="card"><b>Lanjut Jelajah nonaktif.</b><p class="hero-line">Butuh Health >35, Fatigue <75, Rad <70, Hunger <82, Thirst <82.</p></div>';
-  const locations=Object.entries(LOCS).filter(([id])=>state.world.unlocked.includes(id)).map(([id,l])=>{
-   const scout=state.world.scoutedDay===state.day?'<span class="cost">Scout -2 Rad</span>':'';
-   return `<div class="location"><div class="location-top"><b>${l.name}</b><span class="risk ${l.risk.toLowerCase()}">${l.risk}</span></div><p>${l.focus}</p><div class="costs"><span class="cost">${l.time} jam</span><span class="cost">Base Rad ${l.rad}</span>${scout}</div><button class="btn ${id==='relay'?'primary':''}" data-exp="${id}" ${ok?'':'disabled'}>MULAI EKSPEDISI</button></div>`;
+  const ready=expeditionReadiness(),wc=worldCond(),scouted=state.world.scoutedDay===state.day,result=view.expeditionResult;
+  const fmt=n=>`${n>0?'+':''}${Math.round(n*10)/10}`;
+  const readiness=ready.checks.map(x=>`<div class="exp-ready ${x.ok?'ok':'bad'}"><span>${x.label}</span><b>${Math.round(x.value)}</b><small>${x.rule}</small></div>`).join('');
+  const resultHtml=result?`<section class="exp-result"><div class="exp-result-top"><div><span>EXPEDITION COMPLETE</span><strong>${result.name}</strong><p>D${result.started.day} ${fmtHour(result.started.hour)} → D${result.ended.day} ${fmtHour(result.ended.hour)} · ${result.time} jam</p></div><div class="risk ${result.risk.toLowerCase()}">${result.risk}</div></div><div class="exp-result-stats"><div><small>HEALTH</small><b>${Math.round(result.started.health)} → ${Math.round(result.ended.health)}</b></div><div><small>FATIGUE</small><b>${Math.round(result.started.fatigue)} → ${Math.round(result.ended.fatigue)}</b></div><div><small>RADIASI</small><b>${Math.round(result.started.radiation)} → ${Math.round(result.ended.radiation)}</b></div><div><small>DAYA</small><b>${Math.round(result.started.power)} → ${Math.round(result.ended.power)}</b></div></div><div class="exp-result-loot"><span>LOOT RECOVERED</span>${result.loot.length?result.loot.map(x=>`<b>${x}</b>`).join(''):'<b>Tidak ada loot berarti.</b>'}${result.injury?`<p class="danger-text">Cedera perjalanan: Health -${result.injury}</p>`:''}${result.extras.map(x=>`<p>${x}</p>`).join('')}</div><button class="btn primary" data-act="exp-result-close">KEMBALI KE PETA</button></section>`:'';
+  const locations=Object.entries(LOCS).map(([id,l])=>{
+   const unlocked=isLocationUnlocked(id),r=expeditionRadiation(id),p=expeditionTravelPreview(id),can=unlocked&&ready.ok;
+   const visited=state.world.visited.includes(id),story=id==='relay'||id==='depot';
+   return `<section class="exp-location ${unlocked?'':'locked'} ${story?'story':''}"><div class="exp-location-top"><div><span>${story?'STORY LOCATION':'SURFACE LOCATION'}${visited?' · VISITED':''}</span><b>${l.name}</b></div><span class="risk ${l.risk.toLowerCase()}">${l.risk}</span></div><p>${l.focus}</p><div class="exp-metrics"><div><small>WAKTU</small><b>${l.time} jam</b></div><div><small>BASE RAD</small><b>${l.rad}</b></div><div><small>EST. RAD</small><b>+${Math.round(r.total)}</b></div><div><small>FATIGUE</small><b>${Math.round(state.fatigue)}→${Math.round(p.after.fatigue)}</b></div></div><div class="costs"><span class="cost">World ${fmt(r.world)} Rad</span>${r.scout?'<span class="cost scout">Scout -2 Rad</span>':''}<span class="cost">Loot: ${l.focus}</span></div>${unlocked?`<button class="btn ${story?'primary':''}" data-exp="${id}" ${can?'':'disabled'}>${can?'RENCANAKAN EKSPEDISI':'KONDISI TIDAK LAYAK'}</button>`:`<button class="btn" disabled>TERKUNCI</button><div class="reason">${locationUnlockReason(id)}</div>`}</section>`;
   }).join('');
-  body=`<p class="hero-line">Pilih lokasi, baca waktu/radiasi/risk, lalu bawa loot pulang. Security scan mengurangi radiasi hari ini.</p>${res}${warning}<div>${locations}</div>`;
+  body=`${resultHtml}<section class="exp-command"><div><span>EXPEDITION CONTROL // DAY ${state.day}</span><strong>${ready.ok?'FIELD READY':'DEPARTURE LOCKED'}</strong><p>Ekspedisi memakai waktu bunker nyata. Lapar, Haus, Fatigue, Daya, dan survival damage terus berjalan selama perjalanan.</p></div><div class="exp-world"><small>WORLD</small><b>${wc.name}</b><span>Rad ${fmt(wc.rad)}${scouted?' · Scout -2':''}</span></div></section><section class="exp-readiness">${readiness}</section>${!ready.ok?'<div class="exp-warning"><b>Lanjut Jelajah nonaktif.</b><p>Semua syarat readiness harus lolos sebelum berangkat.</p></div>':''}<section class="exp-scout ${scouted?'active':''}"><div><span>SURFACE INTEL</span><b>${scouted?'SCOUT ACTIVE':'NO SCOUT DATA'}</b></div><p>${scouted?'Security scan aktif untuk Hari '+state.day+'. Estimasi Radiasi semua lokasi dikurangi 2.':'Scan di Keamanan sebelum berangkat untuk menurunkan estimasi Radiasi sebesar 2 hari ini.'}</p></section><div class="section-head exp-section-head"><h3>Lokasi Permukaan</h3><span>11 lokasi · locked tetap terlihat</span></div><div class="exp-location-list">${locations}</div>`;
  }
 
  if(p==='survivor'){
@@ -665,9 +750,9 @@ function panel(){
   body=settingsPanel();
  }
 
- const panelClass=p==='radio'?'radio-panel':p==='medis'?'medical-panel':p==='gudang'?'warehouse-panel':p==='kasur'?'sleep-panel':'';
- const headClass=p==='radio'?'radio-head':p==='medis'?'medical-head':p==='gudang'?'warehouse-head':p==='kasur'?'sleep-head':'';
- const subtitle=p==='radio'?'COMMUNICATION STATION // OFFLINE ARCHIVE':p==='medis'?'MEDICAL STATION // HEALTH & RADIATION':p==='gudang'?'SUPPLY STORAGE // FOOD & DRINK':p==='kasur'?'REST MODULE // SLEEP & RECOVERY':'';
+ const panelClass=p==='radio'?'radio-panel':p==='medis'?'medical-panel':p==='gudang'?'warehouse-panel':p==='kasur'?'sleep-panel':p==='expedition'?'expedition-panel':'';
+ const headClass=p==='radio'?'radio-head':p==='medis'?'medical-head':p==='gudang'?'warehouse-head':p==='kasur'?'sleep-head':p==='expedition'?'expedition-head':'';
+ const subtitle=p==='radio'?'COMMUNICATION STATION // OFFLINE ARCHIVE':p==='medis'?'MEDICAL STATION // HEALTH & RADIATION':p==='gudang'?'SUPPLY STORAGE // FOOD & DRINK':p==='kasur'?'REST MODULE // SLEEP & RECOVERY':p==='expedition'?'SURFACE OPERATIONS // RISK & LOOT':'';
  return `<main class="screen panel ${panelClass}"><header class="panel-head ${headClass}"><button class="back" data-act="back">←</button><div class="grow"><h1>${title}</h1>${subtitle?`<span>${subtitle}</span>`:''}</div><small>D${state.day} ${fmtHour()}</small></header>${body}</main>`;
 }
 function upgradeCard(key,label){
@@ -703,7 +788,7 @@ function bind(){
   pg.addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25&&dx<0)act('prologue-next')},{passive:true});
  }
 }
-function act(a){if(a==='install'){if(installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}else toast('Gunakan menu browser → Install app');return}if(a==='continue'){state=load();view.screen='game';view.panel=null;render()}if(a==='new'){if(hasSave()&&!confirm('Active save akan diganti. Mulai game baru?'))return;state=fresh();localStorage.setItem(SAVE,JSON.stringify(state));view.screen='prologue';view.prologueFrame=0;render()}if(a==='archive'){state=load()||fresh();view.screen='game';view.panel='archive';render()}if(a==='settings'){state=load()||fresh();view.screen='game';view.panel='settings';render()}if(a==='credits'){view.screen='credits';view.panel=null;render()}if(a==='prologue-next'){if(view.prologueFrame<6){view.prologueFrame++;render()}else{state.story.prologueDone=true;log('LOCKDOWN engaged. Day 1 07:00.');save();view.screen='game';view.panel=null;render()}}if(a==='skip'){if(!isGameOver()){advance(1);randomEmergency()}}if(a==='menu'){view.panel='settings';render()}if(a==='back')back();if(a==='fuel')fuel();if(a==='med')useMed();if(a==='scan')scan();if(a==='repair')repair();if(a==='sleep'){const h=Number($('#sleepRange')?.value||4);sleep(h)}if(a==='radio-story')radioStory();if(a==='radio-random')radioRandom();if(a==='replay-prologue'){view.screen='prologue';view.panel=null;view.prologueFrame=0;render()}if(a==='to-menu'){view.screen='menu';view.panel=null;save();render()}if(a==='restart'){if(confirm('Hapus active game save dan mulai ulang dari Day 1 07:00? Settings audio/haptic dipertahankan.')){const set=state.settings;localStorage.removeItem(SAVE);state=fresh();state.settings=set;localStorage.setItem(SETTINGS,JSON.stringify(set));localStorage.setItem(SAVE,JSON.stringify(state));view.screen='prologue';view.panel=null;view.prologueFrame=0;render()}}}
+function act(a){if(a==='install'){if(installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}else toast('Gunakan menu browser → Install app');return}if(a==='continue'){state=load();view.screen='game';view.panel=null;render()}if(a==='new'){if(hasSave()&&!confirm('Active save akan diganti. Mulai game baru?'))return;state=fresh();localStorage.setItem(SAVE,JSON.stringify(state));view.screen='prologue';view.prologueFrame=0;render()}if(a==='archive'){state=load()||fresh();view.screen='game';view.panel='archive';render()}if(a==='settings'){state=load()||fresh();view.screen='game';view.panel='settings';render()}if(a==='credits'){view.screen='credits';view.panel=null;render()}if(a==='prologue-next'){if(view.prologueFrame<6){view.prologueFrame++;render()}else{state.story.prologueDone=true;log('LOCKDOWN engaged. Day 1 07:00.');save();view.screen='game';view.panel=null;render()}}if(a==='skip'){if(!isGameOver()){advance(1);randomEmergency()}}if(a==='menu'){view.panel='settings';render()}if(a==='back')back();if(a==='fuel')fuel();if(a==='med')useMed();if(a==='scan')scan();if(a==='repair')repair();if(a==='sleep'){const h=Number($('#sleepRange')?.value||4);sleep(h)}if(a==='radio-story')radioStory();if(a==='radio-random')radioRandom();if(a==='exp-result-close'){view.expeditionResult=null;render();}if(a==='replay-prologue'){view.screen='prologue';view.panel=null;view.prologueFrame=0;render()}if(a==='to-menu'){view.screen='menu';view.panel=null;save();render()}if(a==='restart'){if(confirm('Hapus active game save dan mulai ulang dari Day 1 07:00? Settings audio/haptic dipertahankan.')){const set=state.settings;localStorage.removeItem(SAVE);state=fresh();state.settings=set;localStorage.setItem(SETTINGS,JSON.stringify(set));localStorage.setItem(SAVE,JSON.stringify(state));view.screen='prologue';view.panel=null;view.prologueFrame=0;render()}}}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if(view.screen==='menu')render()});window.addEventListener('appinstalled',()=>{installPrompt=null;toast('LOCKDOWN terpasang')});window.addEventListener('pagehide',()=>{save();AudioUI.background()});document.addEventListener('visibilitychange',()=>{if(document.hidden){save();AudioUI.background()}else AudioUI.foreground()});window.addEventListener('keydown',e=>{if(e.key==='Escape')back()});window.addEventListener('popstate',()=>back());
 if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await reg.update()}catch(_){}});
 preloadPrologue();state=load();view.screen='menu';render();
