@@ -1,4 +1,13 @@
-# LOCKDOWN PWA v0.5 — Cinematic Prologue
+# LOCKDOWN PWA — CHANGELOG
+
+## v0.6 — Premium Main Menu
+- Rebuilt Main Menu hierarchy for a more cinematic bunker-game presentation.
+- Replaced the old concept-board crop with a clean bunker-door background.
+- Added active-save dossier: day, time, location, condition, main quest, and last local-save time.
+- Preserves legacy saves and enriches them with lightweight metadata on next save.
+- Added Credits screen so the Main Menu now matches the required menu structure.
+- Tightened button hierarchy for Continue / New Game / support actions.
+- Service worker cache bumped to v6.
 
 ## Prologue integration
 - 7 fixed cinematic images integrated into New Game and Story Archive replay.

@@ -1,4 +1,4 @@
-# LOCKDOWN PWA v0.5
+# LOCKDOWN PWA v0.6
 
 Cinematic Prologue integration pass for the LOCKDOWN Chapter 1 PWA.
 
@@ -11,3 +11,8 @@ After GitHub Pages finishes publishing, reload once. The service worker uses a n
 
 ## Prologue assets
 All 7 frames are stored as optimized 900×1600 WebP files under `assets/prologue/` and cached for offline replay.
+
+## Update v0.6 ke GitHub Pages
+Kalau repo live sudah punya WAV di `assets/audio/`, gunakan paket **UPDATE ONLY** agar file audio tidak ikut terganggu. Upload/replace file update ke root repo, tunggu Pages publish, lalu tutup dan buka ulang PWA supaya cache service worker v6 mengambil asset terbaru.
+
+Save tetap memakai key `lockdown_save`; update ini tidak sengaja mereset progress.
