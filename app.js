@@ -280,7 +280,44 @@ function useMed(){const it=state.items.meds.med;if(it.qty<=0)return toast('Obat 
 function fuel(){if(qty('fuel.fuel')<=0)return toast('Fuel habis');addQty('fuel','fuel',-1);let gain=[0,35,42,50][state.upgrades.generator];const r=survivor('raka');if(r&&r.trust>=40)gain+=5;state.power=clamp(state.power+gain);log('Generator diisi Fuel. Daya +'+gain);save();render()}
 function scan(){let cost=[0,5,4,3][state.upgrades.keamanan];if(state.power<cost)return toast('Daya tidak cukup');state.power-=cost;state.world.scoutedDay=state.day;objective('scan');completeOnboarding('security');log('Area luar dipindai. Rad ekspedisi -2 hari ini.');advance(1)}
 function repair(){if(state.scrap<2)return toast('Komponen tidak cukup');state.scrap-=2;state.integrity=clamp(state.integrity+[0,10,13,16][state.upgrades.keamanan]);log('Integritas bunker diperbaiki.');save();render()}
-function sleep(h){let lvl=state.upgrades.kasur;let healHr=[0,2.5,3.25,4][lvl],fatHr=[0,8,10,12][lvl];let mult=state.fatigue>=85?.75:state.fatigue>=65?.9:1;applyHealing(healHr*h*mult);state.fatigue=clamp(state.fatigue-fatHr*h);state.morale=clamp(state.morale+.35*h);objective('sleep');log('Tidur '+h+' jam.');advance(h,{sleep:true})}
+function sleepPreview(h){
+ h=clamp(Math.round(Number(h)||1),1,8);
+ const lvl=state.upgrades.kasur;
+ const healHr=[0,2.5,3.25,4][lvl],fatHr=[0,8,10,12][lvl];
+ const mult=state.fatigue>=85?.75:state.fatigue>=65?.9:1;
+ const before={health:state.health,hunger:state.hunger,thirst:state.thirst,fatigue:state.fatigue,morale:state.morale,power:state.power,radiation:state.radiation,day:state.day,hour:state.hour};
+ const out={...before};
+ const healPotential=healHr*h*mult;
+ out.health=clamp(out.health+healPotential);
+ out.fatigue=clamp(out.fatigue-fatHr*h);
+ out.morale=clamp(out.morale+.35*h);
+ let d=out.day,hr=out.hour;
+ for(let i=0;i<h;i++){
+  const wc=worldCond(d);
+  out.hunger=clamp(out.hunger+2.2);
+  out.thirst=clamp(out.thirst+3+wc.thirst);
+  out.power=clamp(out.power-genDrain());
+  if(state.integrity<50)out.radiation=clamp(out.radiation+.6);
+  if(out.hunger>85)out.health=clamp(out.health-1);
+  if(out.thirst>88)out.health=clamp(out.health-2);
+  if(out.fatigue>=92)out.health=clamp(out.health-1);
+  if(out.radiation>75)out.health=clamp(out.health-1);
+  if(out.radiation>90)out.health=clamp(out.health-1);
+  hr++;
+  if(hr>=24){hr=0;d++}
+ }
+ out.day=d;out.hour=hr;
+ return {hours:h,lvl,healHr,fatHr,mult,healPotential,before,after:out,crossesDay:d!==before.day};
+}
+function sleep(h){
+ const p=sleepPreview(h),b=p.before;
+ applyHealing(p.healPotential);
+ state.fatigue=clamp(state.fatigue-p.fatHr*p.hours);
+ state.morale=clamp(state.morale+.35*p.hours);
+ objective('sleep');
+ log('Tidur '+p.hours+' jam · Health '+Math.round(b.health)+'→'+Math.round(Math.min(100,b.health+p.healPotential))+' · Fatigue '+Math.round(b.fatigue)+'→'+Math.round(state.fatigue));
+ advance(p.hours,{sleep:true});
+}
 function craft(type){if(type==='filter'){let c=[0,3,2,1][state.upgrades.workbench];if(state.scrap<c)return toast('Komponen tidak cukup');state.scrap-=c;state.filters++;log('Membuat 1 Filter.');objective('craft')}else{let c=state.upgrades.workbench===3?3:4;if(state.scrap<c)return toast('Komponen tidak cukup');state.scrap-=c;state.integrity=clamp(state.integrity+15);log('Bunker plate dipasang. +15 Integritas');objective('craft')}AudioUI.craft();save();render()}
 function upgrade(key){let lvl=state.upgrades[key];if(lvl>=3)return;let c=lvl===1?5:9;if(state.scrap<c)return toast('Komponen tidak cukup');state.scrap-=c;state.upgrades[key]++;log('Upgrade '+key+' ke Lv'+state.upgrades[key]);AudioUI.hammer();vibrate(70);save();render()}
 function pushRadioArchive(label,text,kind='RX'){
@@ -332,7 +369,7 @@ function formatSavedAt(ts){if(!ts)return 'BELUM TERCATAT';try{return new Intl.Da
 function saveDossier(){const s=load();if(!s)return `<div class="save-dossier empty"><div class="dossier-kicker">ACTIVE SAVE</div><strong>TIDAK ADA DATA</strong><p>Mulai Chapter 1 dari Hari 1 · 07:00.</p></div>`;const q=mainQuestFor(s.progression?.mainStage||1);return `<div class="save-dossier"><div class="dossier-top"><div><div class="dossier-kicker">ACTIVE SAVE // LOCAL</div><strong>${s.meta?.playerName||'PENGHUNI 7B'}</strong></div><span class="condition ${overallFor(s).toLowerCase()}">${overallFor(s)}</span></div><div class="save-grid"><div><small>HARI</small><b>${s.day}</b></div><div><small>WAKTU</small><b>${fmtHour(s.hour)}</b></div><div><small>LOKASI</small><b>${s.meta?.location||'Bunker 7B'}</b></div><div><small>LEVEL</small><b>${s.meta?.level??'—'}</b></div></div><div class="dossier-quest"><span>MAIN QUEST</span><b>${q[0]}</b></div><div class="dossier-foot">SAVE TERAKHIR // ${formatSavedAt(s.meta?.lastSavedAt)}</div></div>`}
 function mainQuestFor(p){return ({1:['Stabilkan Bunker',''],2:['Pastikan Daya Bertahan',''],3:['Lihat Dunia Luar',''],4:['Cari Sinyal',''],5:['Bertahan Sampai Malam',''],6:['Cari Sinyal Kehidupan',''],7:['Ikuti Petunjuk ECHO-7',''],8:['Pulihkan Komunikasi',''],9:['Aktifkan Modul / HAVEN',''],10:['Bertahan sampai finale',''],11:['Chapter 1 Complete','']})[p]||['Chapter 1 Complete','']}
 function overallFor(s){const c=(k,v)=>{const low=['hunger','thirst','fatigue','radiation'].includes(k);return low?(v>=80?'danger':v>=60?'warn':''):(v<=25?'danger':v<=45?'warn':'')};const vals=[c('health',s.health),c('hunger',s.hunger),c('thirst',s.thirst),c('fatigue',s.fatigue),c('morale',s.morale),c('radiation',s.radiation),c('power',s.power),c('integrity',s.integrity)];return vals.includes('danger')?'Kritis':vals.includes('warn')?'Waspada':'Aman'}
-function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.10.1 · STORAGE PASS · CACHE HOTFIX</div></div></div></main>`}
+function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.11 · SLEEP STATION PASS</div></div></div></main>`}
 function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.9 · LOCAL BUILD</div></main>`}
 
 function prologue(){
@@ -384,8 +421,31 @@ function dashboard(){
  <section class="card objective-card"><div class="daily-progress"><i style="width:${done/3*100}%"></i></div>${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}<div class="daily-reward"><span>3/3 REWARD</span><b>+2 Komponen · +1 Filter</b></div></section>
  <div class="section-head"><h3>Activity Log</h3><span>4 terbaru</span></div>
  <section class="card log-card">${state.logs.length?state.logs.slice(0,4).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section>
- <div class="version">LOCKDOWN · PWA v0.10.1 · STORAGE PASS · CACHE HOTFIX</div>
+ <div class="version">LOCKDOWN · PWA v0.11 · SLEEP STATION PASS</div>
  </main>`;
+}
+function sleepDeltaLabel(key,b,a){
+ const delta=a-b;
+ const highGood=['health','morale','power'].includes(key);
+ const good=highGood?delta>=0:delta<=0;
+ const abs=Math.abs(delta);
+ return `<small class="${good?'benefit':'cost'}">${delta>0?'+':''}${Math.round(delta*10)/10}</small>`;
+}
+function sleepPreviewHtml(p){
+ const rows=[['health','HEALTH'],['fatigue','FATIGUE'],['morale','MORAL'],['hunger','LAPAR'],['thirst','HAUS'],['power','DAYA']];
+ return rows.map(([k,label])=>`<div class="sleep-preview-row"><span>${label}</span><b>${Math.round(p.before[k])} → ${Math.round(p.after[k])}</b>${sleepDeltaLabel(k,p.before[k],p.after[k])}</div>`).join('');
+}
+function sleepDayWarningHtml(){return `<section class="sleep-warning"><b>PERGANTIAN HARI</b><p>Tidur melewati 00:00. Daily survivor upkeep, objective baru, dan story yang memenuhi syarat dapat ikut diproses.</p></section>`}
+function updateSleepPreview(){
+ const r=$('#sleepRange');if(!r)return;
+ const p=sleepPreview(Number(r.value));
+ const label=$('#sleepLabel'),end=$('#sleepEndTime'),prev=$('#sleepPreview'),warn=$('#sleepDayWarning'),btn=$('#sleepButtonLabel'),meta=$('#sleepButtonMeta');
+ if(label)label.textContent=p.hours+' JAM';
+ if(end)end.textContent='→ D'+p.after.day+' '+fmtHour(p.after.hour);
+ if(prev)prev.innerHTML=sleepPreviewHtml(p);
+ if(warn)warn.innerHTML=p.crossesDay?sleepDayWarningHtml():'';
+ if(btn)btn.textContent='TIDUR '+p.hours+' JAM';
+ if(meta)meta.textContent='Selesai D'+p.after.day+' '+fmtHour(p.after.hour);
 }
 function panel(){
  const p=view.panel;
@@ -440,7 +500,18 @@ function panel(){
 
  if(p==='kasur'){
   title='Kasur';
-  body=`<p class="hero-line">Tidur memulihkan fatigue dan health. Lapar/haus tetap berjalan.</p>${res}<div class="range-wrap"><div class="range-top"><span>Durasi Tidur</span><span id="sleepLabel">4 jam</span></div><input id="sleepRange" type="range" min="1" max="8" value="4"/><button class="btn primary" data-act="sleep">TIDUR</button></div><div class="action-list" style="margin-top:10px">${upgradeCard('kasur','Kasur')}</div>`;
+  const sp=sleepPreview(4);
+  const multLabel=sp.mult===1?'100%':Math.round(sp.mult*100)+'%';
+  body=`<section class="sleep-status"><div><span>REST MODULE // BUNKER 7B</span><strong>${state.fatigue>=80?'KELELAHAN KRITIS':state.fatigue>=60?'ISTIRAHAT DISARANKAN':'KONDISI TERKENDALI'}</strong><p>Tidur memulihkan Health, Fatigue, dan Moral. Lapar, Haus, Daya, serta paparan dari bunker rusak tetap bergerak selama waktu berlalu.</p></div><div class="sleep-level"><small>KASUR</small><b>LV ${sp.lvl}</b><span>${sp.healHr}/j heal · -${sp.fatHr}/j fatigue</span></div></section>
+  <section class="sleep-body-state"><div class="${statClass('health',state.health)}"><span>HEALTH</span><b>${Math.round(state.health)}</b><small>${statState('health',state.health)}</small></div><div class="${statClass('fatigue',state.fatigue)}"><span>FATIGUE</span><b>${Math.round(state.fatigue)}</b><small>${statState('fatigue',state.fatigue)}</small></div><div class="${statClass('hunger',state.hunger)}"><span>LAPAR</span><b>${Math.round(state.hunger)}</b><small>${statState('hunger',state.hunger)}</small></div><div class="${statClass('thirst',state.thirst)}"><span>HAUS</span><b>${Math.round(state.thirst)}</b><small>${statState('thirst',state.thirst)}</small></div></section>
+  <section class="sleep-efficiency ${sp.mult<1?'limited':''}"><div><span>HEAL EFFICIENCY</span><b id="sleepHealEfficiency">${multLabel}</b></div><p id="sleepEfficiencyText">${state.fatigue>=85?'Fatigue ≥85: heal Kasur dikurangi menjadi 75%.':state.fatigue>=65?'Fatigue ≥65: heal Kasur dikurangi menjadi 90%.':'Fatigue di bawah 65: heal Kasur bekerja penuh.'}</p></section>
+  <div class="section-head sleep-section-head"><h3>Durasi Istirahat</h3><span>1–8 jam</span></div>
+  <section class="sleep-control"><div class="sleep-clock"><small>DURASI</small><b id="sleepLabel">4 JAM</b><span id="sleepEndTime">→ D${sp.after.day} ${fmtHour(sp.after.hour)}</span></div><input id="sleepRange" type="range" min="1" max="8" value="4"/><div class="sleep-scale"><span>1J</span><span>4J</span><span>8J</span></div></section>
+  <div class="section-head sleep-section-head"><h3>Preview</h3><span>sebelum → sesudah</span></div>
+  <section class="sleep-preview" id="sleepPreview">${sleepPreviewHtml(sp)}</section>
+  <div id="sleepDayWarning">${sp.crossesDay?sleepDayWarningHtml():''}</div>
+  <button class="sleep-confirm" data-act="sleep"><span>ISTIRAHAT</span><b id="sleepButtonLabel">TIDUR 4 JAM</b><small id="sleepButtonMeta">Selesai D${sp.after.day} ${fmtHour(sp.after.hour)}</small></button>
+  <div class="section-head sleep-section-head"><h3>Station Upgrade</h3><span>maksimum Lv3</span></div><div class="action-list sleep-upgrade">${upgradeCard('kasur','Kasur')}</div>`;
  }
 
  if(p==='security'){
@@ -510,9 +581,9 @@ function panel(){
   body=settingsPanel();
  }
 
- const panelClass=p==='radio'?'radio-panel':p==='medis'?'medical-panel':p==='gudang'?'warehouse-panel':'';
- const headClass=p==='radio'?'radio-head':p==='medis'?'medical-head':p==='gudang'?'warehouse-head':'';
- const subtitle=p==='radio'?'COMMUNICATION STATION // OFFLINE ARCHIVE':p==='medis'?'MEDICAL STATION // HEALTH & RADIATION':p==='gudang'?'SUPPLY STORAGE // FOOD & DRINK':'';
+ const panelClass=p==='radio'?'radio-panel':p==='medis'?'medical-panel':p==='gudang'?'warehouse-panel':p==='kasur'?'sleep-panel':'';
+ const headClass=p==='radio'?'radio-head':p==='medis'?'medical-head':p==='gudang'?'warehouse-head':p==='kasur'?'sleep-head':'';
+ const subtitle=p==='radio'?'COMMUNICATION STATION // OFFLINE ARCHIVE':p==='medis'?'MEDICAL STATION // HEALTH & RADIATION':p==='gudang'?'SUPPLY STORAGE // FOOD & DRINK':p==='kasur'?'REST MODULE // SLEEP & RECOVERY':'';
  return `<main class="screen panel ${panelClass}"><header class="panel-head ${headClass}"><button class="back" data-act="back">←</button><div class="grow"><h1>${title}</h1>${subtitle?`<span>${subtitle}</span>`:''}</div><small>D${state.day} ${fmtHour()}</small></header>${body}</main>`;
 }
 function upgradeCard(key,label){let lvl=state.upgrades[key],cost=lvl===1?5:lvl===2?9:0;return `<button class="action ${lvl>=3||state.scrap<cost?'disabled':''}" data-upgrade="${key}" ${lvl>=3?'disabled':''}><b>${label} Lv${lvl} ${lvl>=3?'· MAX':'→ Lv'+(lvl+1)}</b><p>${lvl>=3?'Upgrade Maksimum. Tetap terlihat sebagai state MAX.':'Tingkatkan efisiensi station.'}</p><div class="costs"><span class="cost">${lvl>=3?'MAX':cost+' Komponen'}</span></div>${lvl<3&&state.scrap<cost?'<div class="reason">Komponen tidak cukup.</div>':''}</button>`}
@@ -535,7 +606,7 @@ function bind(){
  document.querySelectorAll('[data-setting]').forEach(i=>i.onchange=()=>{state.settings[i.dataset.setting]=i.checked;localStorage.setItem(SETTINGS,JSON.stringify(state.settings));AudioUI.ensure();AudioUI.sync();AudioUI.scene();save()});
  document.querySelectorAll('[data-volume]').forEach(i=>i.oninput=()=>{const k=i.dataset.volume,v=clamp(Number(i.value)||0,0,100);state.settings[k]=v;const lab=$('#'+k+'Label');if(lab)lab.textContent=v;localStorage.setItem(SETTINGS,JSON.stringify(state.settings));AudioUI.ensure();AudioUI.sync();AudioUI.scene();save()});
  document.querySelectorAll('button:not([disabled])').forEach(b=>b.addEventListener('pointerdown',()=>AudioUI.uiClick(),{passive:true}));
- const r=$('#sleepRange');if(r)r.oninput=()=>$('#sleepLabel').textContent=r.value+' jam';
+ const r=$('#sleepRange');if(r)r.oninput=updateSleepPreview;
  const pg=document.querySelector('.prologue');
  if(pg){
   pg.addEventListener('click',e=>{if(!e.target.closest('button'))act('prologue-next')});

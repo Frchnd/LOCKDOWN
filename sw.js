@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v10-1-cache-hotfix';
+const CACHE='lockdown-pwa-v11-sleep-station-pass';
 const CORE=[
- './','./index.html','./app.css?v=0.10.1','./app.js?v=0.10.1','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.11','./app.js?v=0.11','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',

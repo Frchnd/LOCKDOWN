@@ -1,12 +1,19 @@
-# LOCKDOWN PWA v0.10.1 — Cache Hotfix
+# LOCKDOWN PWA v0.11 — Sleep Station Pass
 
-- Memperbaiki kasus PWA terinstall tetap menampilkan v0.9 setelah file v0.10 sudah di-deploy.
-- `index.html`, `app.js`, dan `app.css` sekarang menggunakan strategi update yang tidak bergantung pada cache lama ketika online.
-- `app.js` dan `app.css` memakai cache-busting query `v=0.10.1`.
-- Service worker menggunakan cache baru `lockdown-pwa-v10-1-cache-hotfix`.
-- Service worker menghapus cache versi lama saat aktivasi.
-- Existing client otomatis direfresh satu kali ketika worker baru menggantikan worker lama.
-- Registration memakai `updateViaCache: none` dan meminta update saat load.
-- Offline fallback tetap tersedia setelah asset terbaru tercache.
-- Gameplay/storage feature v0.10 tidak diubah.
-- Active save `lockdown_save` tidak dihapus.
+## Kasur
+- Kasur sekarang punya full-panel Rest Module sendiri.
+- Durasi tidur tetap 1–8 jam dan preview berubah real-time mengikuti slider.
+- Preview menampilkan Health, Fatigue, Moral, Lapar, Haus, dan Daya sebelum → sesudah.
+- Recovery mengikuti level Kasur: Lv1 2.5 Health/jam & -8 Fatigue/jam; Lv2 3.25 & -10; Lv3 4 & -12.
+- Heal multiplier Fatigue ditampilkan: >=85 = 75%, >=65 = 90%, di bawah 65 = 100%.
+- Moral sleep +0.35/jam tetap berlaku.
+- Lapar/Haus/Power tetap bergerak selama tidur sesuai simulasi per jam.
+- Jika tidur melewati 00:00, UI memberi warning bahwa survivor upkeep, objective baru, dan story dapat diproses.
+- Jam selesai tidur ditampilkan sebelum konfirmasi.
+- Upgrade Kasur tetap terlihat sampai Lv3/MAX.
+
+## PWA update reliability
+- Mempertahankan network-first shell strategy dari v0.10.1 cache hotfix.
+- Cache dinaikkan ke v11 dan app.css/app.js memakai query v0.11.
+- Save key tetap `lockdown_save`.
+- Folder audio tidak disertakan/ditimpa oleh UPDATE ONLY.
