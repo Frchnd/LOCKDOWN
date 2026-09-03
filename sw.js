@@ -1,4 +1,4 @@
-const CACHE='lockdown-pwa-v9-medical-station-pass';
+const CACHE='lockdown-pwa-v10-storage-station-pass';
 const CORE=[
  './','./index.html','./app.css','./app.js','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',

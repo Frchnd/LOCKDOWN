@@ -232,8 +232,50 @@ function closeModal(){view.modal=null;save();render()}
 function openPanel(p){view.screen='game';view.panel=p;if(['gudang','generator','radio'].includes(p))completeOnboarding(p);if(p==='radio')AudioUI.radioBurst();render()}
 function back(){if(view.modal){closeModal();return}if(view.panel){if(view.panel==='radio')AudioUI.stopRadio();view.panel=null;render();return}view.screen='menu';render()}
 
-function useFood(id){const it=state.items.foods[id];if(!it||it.qty<=0)return;it.qty--;state.hunger=clamp(state.hunger+(it.hunger||0));state.thirst=clamp(state.thirst+(it.thirst||0));state.morale=clamp(state.morale+(it.morale||0));objective('consume');log('Mengonsumsi '+it.name);save();render()}
-function useDrink(id){const it=state.items.drinks[id];if(!it||it.qty<=0)return;it.qty--;state.thirst=clamp(state.thirst+(it.thirst||0));state.fatigue=clamp(state.fatigue+(it.fatigue||0));state.morale=clamp(state.morale+(it.morale||0));if(id==='coffee')state.flags.coffeeCrashUntil=globalHour()+3;objective('consume');log('Minum '+it.name);save();render()}
+function useFood(id){
+ const it=state.items.foods[id];if(!it||it.qty<=0)return;
+ const before={hunger:state.hunger,thirst:state.thirst,morale:state.morale};
+ it.qty--;state.hunger=clamp(state.hunger+(it.hunger||0));state.thirst=clamp(state.thirst+(it.thirst||0));state.morale=clamp(state.morale+(it.morale||0));
+ objective('consume');
+ const h=Math.round(before.hunger-state.hunger),t=Math.round(state.thirst-before.thirst),m=Math.round(state.morale-before.morale);
+ log(`${it.name}: Lapar -${h}${t?` · Haus ${t>0?'+':''}${t}`:''}${m?` · Moral ${m>0?'+':''}${m}`:''}`);save();render();
+}
+function useDrink(id){
+ const it=state.items.drinks[id];if(!it||it.qty<=0)return;
+ const before={thirst:state.thirst,fatigue:state.fatigue,morale:state.morale};
+ it.qty--;state.thirst=clamp(state.thirst+(it.thirst||0));state.fatigue=clamp(state.fatigue+(it.fatigue||0));state.morale=clamp(state.morale+(it.morale||0));
+ if(id==='coffee')state.flags.coffeeCrashUntil=globalHour()+3;objective('consume');
+ const t=Math.round(before.thirst-state.thirst),f=Math.round(before.fatigue-state.fatigue),m=Math.round(state.morale-before.morale);
+ log(`${it.name}: Haus -${t}${f?` · Fatigue -${f}`:''}${m?` · Moral ${m>0?'+':''}${m}`:''}${id==='coffee'?' · Coffee Crash 3 jam':''}`);save();render();
+}
+function warehousePreview(item){
+ const before={hunger:state.hunger,thirst:state.thirst,fatigue:state.fatigue,morale:state.morale};
+ const after={
+  hunger:clamp(before.hunger+(item.hunger||0)),
+  thirst:clamp(before.thirst+(item.thirst||0)),
+  fatigue:clamp(before.fatigue+(item.fatigue||0)),
+  morale:clamp(before.morale+(item.morale||0))
+ };
+ return {before,after};
+}
+function warehouseItemCard(id,item,type){
+ const p=warehousePreview(item);
+ const effects=[];
+ const rows=[];
+ const defs=[['hunger','LAPAR',false],['thirst','HAUS',false],['fatigue','FATIGUE',false],['morale','MORAL',true]];
+ for(const [k,label,highGood] of defs){
+  const raw=item[k]||0;if(!raw)continue;
+  const delta=Math.round(p.after[k]-p.before[k]);
+  effects.push(`${label} ${delta>0?'+':''}${delta}`);
+  rows.push(`<div class="warehouse-preview-row"><span>${label}</span><b>${Math.round(p.before[k])} → ${Math.round(p.after[k])}</b><small class="${highGood?(delta>=0?'benefit':'cost'):(delta<=0?'benefit':'cost')}">${delta>0?'+':''}${delta}</small></div>`);
+ }
+ const coffee=id==='coffee';
+ const trade=id==='can'?'<div class="warehouse-tradeoff"><b>TRADE-OFF</b><span>Mengenyangkan paling efektif, tetapi Haus +4.</span></div>':coffee?'<div class="warehouse-tradeoff coffee"><b>COFFEE CRASH</b><span>Setelah diminum, fatigue rate +1.5/jam selama 3 jam.</span></div>':'';
+ const kind=type==='food'?'FOOD RATION':'DRINK';
+ const icon=type==='food'?(id==='can'?'▤':'▰'):(id==='coffee'?'◒':'◉');
+ return `<article class="warehouse-item ${id}"><div class="warehouse-item-top"><div class="warehouse-item-icon">${icon}</div><div class="grow"><span>${kind}</span><b>${item.name}</b><small>${effects.join(' · ')}</small></div><div class="warehouse-qty"><small>STOCK</small><b>×${item.qty}</b></div></div><div class="warehouse-preview">${rows.join('')}</div>${trade}<button class="warehouse-use" ${type==='food'?`data-use-food="${id}"`:`data-use-drink="${id}"`}><span>${type==='food'?'KONSUMSI':'MINUM'}</span><b>${item.name}</b></button></article>`;
+}
+
 function useMed(){const it=state.items.meds.med;if(it.qty<=0)return toast('Obat Darurat habis');it.qty--;let heal=28+(state.upgrades.medis-1)*5;if(survivor('maya'))heal+=8;const healed=applyHealing(heal);const beforeRad=state.radiation;state.radiation=clamp(state.radiation-8);const radDown=Math.max(0,beforeRad-state.radiation);log('Obat Darurat digunakan. Health +'+Math.round(healed)+', Rad -'+Math.round(radDown));toast('Treatment selesai · Health +'+Math.round(healed)+' · Rad -'+Math.round(radDown));save();render()}
 function fuel(){if(qty('fuel.fuel')<=0)return toast('Fuel habis');addQty('fuel','fuel',-1);let gain=[0,35,42,50][state.upgrades.generator];const r=survivor('raka');if(r&&r.trust>=40)gain+=5;state.power=clamp(state.power+gain);log('Generator diisi Fuel. Daya +'+gain);save();render()}
 function scan(){let cost=[0,5,4,3][state.upgrades.keamanan];if(state.power<cost)return toast('Daya tidak cukup');state.power-=cost;state.world.scoutedDay=state.day;objective('scan');completeOnboarding('security');log('Area luar dipindai. Rad ekspedisi -2 hari ini.');advance(1)}
@@ -290,7 +332,7 @@ function formatSavedAt(ts){if(!ts)return 'BELUM TERCATAT';try{return new Intl.Da
 function saveDossier(){const s=load();if(!s)return `<div class="save-dossier empty"><div class="dossier-kicker">ACTIVE SAVE</div><strong>TIDAK ADA DATA</strong><p>Mulai Chapter 1 dari Hari 1 · 07:00.</p></div>`;const q=mainQuestFor(s.progression?.mainStage||1);return `<div class="save-dossier"><div class="dossier-top"><div><div class="dossier-kicker">ACTIVE SAVE // LOCAL</div><strong>${s.meta?.playerName||'PENGHUNI 7B'}</strong></div><span class="condition ${overallFor(s).toLowerCase()}">${overallFor(s)}</span></div><div class="save-grid"><div><small>HARI</small><b>${s.day}</b></div><div><small>WAKTU</small><b>${fmtHour(s.hour)}</b></div><div><small>LOKASI</small><b>${s.meta?.location||'Bunker 7B'}</b></div><div><small>LEVEL</small><b>${s.meta?.level??'—'}</b></div></div><div class="dossier-quest"><span>MAIN QUEST</span><b>${q[0]}</b></div><div class="dossier-foot">SAVE TERAKHIR // ${formatSavedAt(s.meta?.lastSavedAt)}</div></div>`}
 function mainQuestFor(p){return ({1:['Stabilkan Bunker',''],2:['Pastikan Daya Bertahan',''],3:['Lihat Dunia Luar',''],4:['Cari Sinyal',''],5:['Bertahan Sampai Malam',''],6:['Cari Sinyal Kehidupan',''],7:['Ikuti Petunjuk ECHO-7',''],8:['Pulihkan Komunikasi',''],9:['Aktifkan Modul / HAVEN',''],10:['Bertahan sampai finale',''],11:['Chapter 1 Complete','']})[p]||['Chapter 1 Complete','']}
 function overallFor(s){const c=(k,v)=>{const low=['hunger','thirst','fatigue','radiation'].includes(k);return low?(v>=80?'danger':v>=60?'warn':''):(v<=25?'danger':v<=45?'warn':'')};const vals=[c('health',s.health),c('hunger',s.hunger),c('thirst',s.thirst),c('fatigue',s.fatigue),c('morale',s.morale),c('radiation',s.radiation),c('power',s.power),c('integrity',s.integrity)];return vals.includes('danger')?'Kritis':vals.includes('warn')?'Waspada':'Aman'}
-function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.9 · MEDICAL STATION PASS · OFFLINE READY</div></div></div></main>`}
+function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.10 · STORAGE STATION PASS · OFFLINE READY</div></div></div></main>`}
 function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.9 · LOCAL BUILD</div></main>`}
 
 function prologue(){
@@ -342,7 +384,7 @@ function dashboard(){
  <section class="card objective-card"><div class="daily-progress"><i style="width:${done/3*100}%"></i></div>${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}<div class="daily-reward"><span>3/3 REWARD</span><b>+2 Komponen · +1 Filter</b></div></section>
  <div class="section-head"><h3>Activity Log</h3><span>4 terbaru</span></div>
  <section class="card log-card">${state.logs.length?state.logs.slice(0,4).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section>
- <div class="version">LOCKDOWN · PWA v0.9 · MEDICAL STATION PASS · OFFLINE</div>
+ <div class="version">LOCKDOWN · PWA v0.10 · STORAGE STATION PASS · OFFLINE</div>
  </main>`;
 }
 function panel(){
@@ -353,9 +395,16 @@ function panel(){
 
  if(p==='gudang'){
   title='Gudang';
-  const foods=Object.entries(state.items.foods).filter(([,x])=>x.qty>0).map(([id,x])=>`<div class="item"><b>${x.name}</b><div class="qty">×${x.qty}</div><p>${id==='snack'?'Lapar -12 · Moral +2':'Lapar -28 · Haus +4 · Moral +1'}</p><button class="btn" data-use-food="${id}">GUNAKAN</button></div>`).join('')||'<div class="card">Persediaan makanan kosong.</div>';
-  const drinks=Object.entries(state.items.drinks).filter(([,x])=>x.qty>0).map(([id,x])=>`<div class="item"><b>${x.name}</b><div class="qty">×${x.qty}</div><p>${id==='water'?'Haus -28':'Haus -8 · Fatigue -18 · Moral +2 · crash 3h'}</p><button class="btn" data-use-drink="${id}">MINUM</button></div>`).join('')||'<div class="card">Persediaan minuman kosong.</div>';
-  body=`<p class="hero-line">Inventory contextual: food dan minuman. Item dengan qty 0 hilang dari daftar.</p>${res}<div class="section-head"><h3>Food</h3><span>${totalFood()} item</span></div><div class="item-grid">${foods}</div><div class="section-head"><h3>Drinks</h3><span>${totalDrink()} item</span></div><div class="item-grid">${drinks}</div>`;
+  const foodEntries=Object.entries(state.items.foods).filter(([,x])=>x.qty>0);
+  const drinkEntries=Object.entries(state.items.drinks).filter(([,x])=>x.qty>0);
+  const foods=foodEntries.map(([id,x])=>warehouseItemCard(id,x,'food')).join()||'<section class="warehouse-empty"><b>FOOD RACK EMPTY</b><p>Tidak ada makanan tersisa. Prioritaskan ekspedisi ke Minimarket, apartemen, atau lokasi dengan food loot.</p></section>';
+  const drinks=drinkEntries.map(([id,x])=>warehouseItemCard(id,x,'drink')).join()||'<section class="warehouse-empty"><b>DRINK RACK EMPTY</b><p>Tidak ada minuman tersisa. Dehidrasi menjadi ancaman utama saat Haus melewati 88.</p></section>';
+  const crashLeft=Math.max(0,state.flags.coffeeCrashUntil-globalHour());
+  body=`<section class="warehouse-status"><div><span>SUPPLY STORAGE // BUNKER 7B</span><strong>${totalFood()+totalDrink()>=6?'STOCK TERKENDALI':totalFood()+totalDrink()>=3?'STOCK MENIPIS':'STOCK KRITIS'}</strong><p>Gudang hanya menampilkan food dan drink. Item dengan stok 0 otomatis hilang dari rack.</p></div><div class="warehouse-counts"><div><small>FOOD</small><b>${totalFood()}</b></div><div><small>DRINK</small><b>${totalDrink()}</b></div></div></section>
+  <section class="warehouse-body-state"><div class="${statClass('hunger',state.hunger)}"><span>LAPAR</span><b>${Math.round(state.hunger)}</b><small>${statState('hunger',state.hunger)}</small></div><div class="${statClass('thirst',state.thirst)}"><span>HAUS</span><b>${Math.round(state.thirst)}</b><small>${statState('thirst',state.thirst)}</small></div><div class="${statClass('fatigue',state.fatigue)}"><span>FATIGUE</span><b>${Math.round(state.fatigue)}</b><small>${statState('fatigue',state.fatigue)}</small></div><div class="${statClass('morale',state.morale)}"><span>MORAL</span><b>${Math.round(state.morale)}</b><small>${statState('morale',state.morale)}</small></div></section>
+  ${crashLeft?`<section class="coffee-crash-active"><span>COFFEE CRASH ACTIVE</span><b>${crashLeft} jam tersisa</b><p>Fatigue rate +1.5/jam sampai efek berakhir.</p></section>`:''}
+  <div class="section-head warehouse-section-head"><h3>Food Rack</h3><span>${totalFood()} unit</span></div><div class="warehouse-grid">${foods}</div>
+  <div class="section-head warehouse-section-head"><h3>Drink Rack</h3><span>${totalDrink()} unit</span></div><div class="warehouse-grid">${drinks}</div>`;
  }
 
  if(p==='generator'){
@@ -461,9 +510,9 @@ function panel(){
   body=settingsPanel();
  }
 
- const panelClass=p==='radio'?'radio-panel':p==='medis'?'medical-panel':'';
- const headClass=p==='radio'?'radio-head':p==='medis'?'medical-head':'';
- const subtitle=p==='radio'?'COMMUNICATION STATION // OFFLINE ARCHIVE':p==='medis'?'MEDICAL STATION // HEALTH & RADIATION':'';
+ const panelClass=p==='radio'?'radio-panel':p==='medis'?'medical-panel':p==='gudang'?'warehouse-panel':'';
+ const headClass=p==='radio'?'radio-head':p==='medis'?'medical-head':p==='gudang'?'warehouse-head':'';
+ const subtitle=p==='radio'?'COMMUNICATION STATION // OFFLINE ARCHIVE':p==='medis'?'MEDICAL STATION // HEALTH & RADIATION':p==='gudang'?'SUPPLY STORAGE // FOOD & DRINK':'';
  return `<main class="screen panel ${panelClass}"><header class="panel-head ${headClass}"><button class="back" data-act="back">←</button><div class="grow"><h1>${title}</h1>${subtitle?`<span>${subtitle}</span>`:''}</div><small>D${state.day} ${fmtHour()}</small></header>${body}</main>`;
 }
 function upgradeCard(key,label){let lvl=state.upgrades[key],cost=lvl===1?5:lvl===2?9:0;return `<button class="action ${lvl>=3||state.scrap<cost?'disabled':''}" data-upgrade="${key}" ${lvl>=3?'disabled':''}><b>${label} Lv${lvl} ${lvl>=3?'· MAX':'→ Lv'+(lvl+1)}</b><p>${lvl>=3?'Upgrade Maksimum. Tetap terlihat sebagai state MAX.':'Tingkatkan efisiensi station.'}</p><div class="costs"><span class="cost">${lvl>=3?'MAX':cost+' Komponen'}</span></div>${lvl<3&&state.scrap<cost?'<div class="reason">Komponen tidak cukup.</div>':''}</button>`}

@@ -1,9 +1,9 @@
-LOCKDOWN v0.9 — UPDATE ONLY
+LOCKDOWN v0.10 — STORAGE STATION PASS / UPDATE ONLY
 
-Replace file berikut di root repo GitHub Pages:
+Replace hanya file berikut di root repo GitHub Pages:
 - app.js
 - app.css
 - sw.js
 
-Jangan hapus folder assets/audio milik kamu.
-Tutup PWA sepenuhnya lalu buka ulang setelah deployment agar cache v9 aktif.
+Folder assets/audio tidak disentuh.
+Setelah GitHub Pages selesai deploy, tutup PWA sepenuhnya lalu buka lagi agar service-worker cache v10 aktif.
