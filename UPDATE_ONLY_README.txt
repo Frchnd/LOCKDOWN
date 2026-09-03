@@ -1,17 +1,10 @@
-LOCKDOWN v0.6 - UPDATE ONLY
+LOCKDOWN PWA v0.7 — UPDATE ONLY
 
-Untuk repo GitHub Pages yang sudah punya audio sendiri:
-1. Upload/replace file dari ZIP update-only ke root repo.
-2. Jangan hapus assets/audio/ yang sudah berisi WAV milikmu.
-3. Tunggu GitHub Pages selesai publish.
-4. Tutup PWA sepenuhnya lalu buka lagi agar service worker v6 aktif.
-
-File yang berubah di v0.6:
-- app.js
+Replace di root GitHub repo:
 - app.css
+- app.js
 - sw.js
-- assets/menu-bg.webp
-- CHANGELOG.md
-- README.md
 
-Save memakai key yang sama: lockdown_save.
+Jangan hapus assets/audio/ atau asset prologue/menu yang sudah ada.
+Setelah deploy selesai, tutup PWA sepenuhnya lalu buka lagi agar cache v7 aktif.
+Save lama tetap memakai lockdown_save.

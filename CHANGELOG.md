@@ -1,34 +1,14 @@
-# LOCKDOWN PWA — CHANGELOG
+# LOCKDOWN PWA Changelog
 
-## v0.6 — Premium Main Menu
-- Rebuilt Main Menu hierarchy for a more cinematic bunker-game presentation.
-- Replaced the old concept-board crop with a clean bunker-door background.
-- Added active-save dossier: day, time, location, condition, main quest, and last local-save time.
-- Preserves legacy saves and enriches them with lightweight metadata on next save.
-- Added Credits screen so the Main Menu now matches the required menu structure.
-- Tightened button hierarchy for Continue / New Game / support actions.
-- Service worker cache bumped to v6.
-
-## Prologue integration
-- 7 fixed cinematic images integrated into New Game and Story Archive replay.
-- Portrait assets: 900×1600 WebP, optimized for phone-first display.
-- Frames follow the Chapter 1 master specification:
-  1. Siaran Darurat
-  2. Langit Menyala
-  3. Kota Runtuh
-  4. Di Bawah Rumah
-  5. Lockdown Engaged
-  6. Sistem Kembali Hidup
-  7. Bertahan Bukan Tujuan Akhir
-- New cinematic vignette, image drift, fade-in curtain, copy entrance, progress indicator, and safe-area layout.
-- Tap anywhere outside the button or swipe left to advance; button remains available for explicit navigation.
-- Prologue replay still works from Story Archive.
-
-## PWA/cache
-- Service-worker cache bumped to `lockdown-pwa-v5-cinematic-prologue`.
-- All 7 prologue WebP assets are part of the offline core cache.
-- Non-navigation offline misses no longer receive `index.html` as a fake image/audio response.
-
-## Compatibility
-- Existing `lockdown_save` save data is preserved.
-- Audio paths and gameplay systems are unchanged from the previous build.
+## v0.7 — Dashboard UI Pass
+- Main Quest diubah menjadi command card dominan dengan stage progress.
+- Header menampilkan Hari, jam, kondisi bunker, world condition, dan tombol Lewati 1 Jam yang lebih jelas.
+- Daya/Bunker/Radiasi diberi quick status strip.
+- Delapan stat sekarang punya state label STABIL/WASPADA/KRITIS dan petunjuk arah nilai.
+- Station grid 2×4 dipoles menjadi terminal bunker; onboarding objective aktif disorot.
+- Station terkunci menampilkan alasan lock, bukan sekadar faded.
+- Survivor/tension dibuat lebih ringkas.
+- Daily Objective punya progress + reward preview.
+- Activity Log dibatasi empat entri terbaru untuk mengurangi kepadatan dashboard.
+- Cache PWA naik ke v7.
+- Save key tetap lockdown_save; save v0.6 tetap kompatibel.

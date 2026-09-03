@@ -160,6 +160,18 @@ function genDrain(){let d=state.upgrades.generator===1?.90:state.upgrades.genera
 function survivor(id){return state.survivors.find(s=>s.id===id)}
 function totalFood(){return Object.values(state.items.foods).reduce((a,x)=>a+(x.qty||0),0)} function totalDrink(){return Object.values(state.items.drinks).reduce((a,x)=>a+(x.qty||0),0)}
 function statClass(k,v){const lowGood=['hunger','thirst','fatigue','radiation'].includes(k);if(lowGood)return v>=80?'danger':v>=60?'warn':'';return v<=25?'danger':v<=45?'warn':''}
+
+function statState(k,v){
+ const cls=statClass(k,v); if(cls==='danger')return 'KRITIS'; if(cls==='warn')return 'WASPADA';
+ return ['hunger','thirst','fatigue','radiation'].includes(k)?'TERKENDALI':'STABIL';
+}
+function stationLockReason(id){
+ if(state.onboarding>=4)return '';
+ const expected=['gudang','generator','security','radio'][state.onboarding];
+ if(id===expected)return 'OBJECTIVE AKTIF';
+ const names={gudang:'Gudang',generator:'Generator',security:'Keamanan',radio:'Radio'};
+ return 'SELESAIKAN '+(names[expected]||'OBJECTIVE').toUpperCase();
+}
 function overall(){const vals=[statClass('health',state.health),statClass('hunger',state.hunger),statClass('thirst',state.thirst),statClass('fatigue',state.fatigue),statClass('morale',state.morale),statClass('radiation',state.radiation),statClass('power',state.power),statClass('integrity',state.integrity)];return vals.includes('danger')?'Kritis':vals.includes('warn')?'Waspada':'Aman'}
 function seedDaily(s=state){const pool=[['scan','Pindai kondisi luar'],['consume','Gunakan makanan atau minuman'],['sleep','Tidur minimal 1 jam'],['radio','Gunakan Radio'],['expedition','Selesaikan ekspedisi'],['craft','Craft sesuatu']];let rot=(s.day*2)%pool.length;s.dailyObjectives=[0,1,2].map(i=>{const p=pool[(rot+i)%pool.length];return {id:p[0],text:p[1],done:false}});s.objectiveRewardClaimed=false}
 function objective(id){const o=state.dailyObjectives.find(x=>x.id===id);if(o&&!o.done){o.done=true;log('Daily Objective selesai: '+o.text);if(state.dailyObjectives.every(x=>x.done)&&!state.objectiveRewardClaimed){state.scrap+=2;state.filters+=1;state.objectiveRewardClaimed=true;log('Reward Daily Objective: +2 Komponen, +1 Filter');toast('Daily 3/3: +2 Komponen, +1 Filter')}}}
@@ -248,8 +260,8 @@ function formatSavedAt(ts){if(!ts)return 'BELUM TERCATAT';try{return new Intl.Da
 function saveDossier(){const s=load();if(!s)return `<div class="save-dossier empty"><div class="dossier-kicker">ACTIVE SAVE</div><strong>TIDAK ADA DATA</strong><p>Mulai Chapter 1 dari Hari 1 · 07:00.</p></div>`;const q=mainQuestFor(s.progression?.mainStage||1);return `<div class="save-dossier"><div class="dossier-top"><div><div class="dossier-kicker">ACTIVE SAVE // LOCAL</div><strong>${s.meta?.playerName||'PENGHUNI 7B'}</strong></div><span class="condition ${overallFor(s).toLowerCase()}">${overallFor(s)}</span></div><div class="save-grid"><div><small>HARI</small><b>${s.day}</b></div><div><small>WAKTU</small><b>${fmtHour(s.hour)}</b></div><div><small>LOKASI</small><b>${s.meta?.location||'Bunker 7B'}</b></div><div><small>LEVEL</small><b>${s.meta?.level??'—'}</b></div></div><div class="dossier-quest"><span>MAIN QUEST</span><b>${q[0]}</b></div><div class="dossier-foot">SAVE TERAKHIR // ${formatSavedAt(s.meta?.lastSavedAt)}</div></div>`}
 function mainQuestFor(p){return ({1:['Stabilkan Bunker',''],2:['Pastikan Daya Bertahan',''],3:['Lihat Dunia Luar',''],4:['Cari Sinyal',''],5:['Bertahan Sampai Malam',''],6:['Cari Sinyal Kehidupan',''],7:['Ikuti Petunjuk ECHO-7',''],8:['Pulihkan Komunikasi',''],9:['Aktifkan Modul / HAVEN',''],10:['Bertahan sampai finale',''],11:['Chapter 1 Complete','']})[p]||['Chapter 1 Complete','']}
 function overallFor(s){const c=(k,v)=>{const low=['hunger','thirst','fatigue','radiation'].includes(k);return low?(v>=80?'danger':v>=60?'warn':''):(v<=25?'danger':v<=45?'warn':'')};const vals=[c('health',s.health),c('hunger',s.hunger),c('thirst',s.thirst),c('fatigue',s.fatigue),c('morale',s.morale),c('radiation',s.radiation),c('power',s.power),c('integrity',s.integrity)];return vals.includes('danger')?'Kritis':vals.includes('warn')?'Waspada':'Aman'}
-function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.6 · MAIN MENU PASS · OFFLINE READY</div></div></div></main>`}
-function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.6 · LOCAL BUILD</div></main>`}
+function menu(){const saved=hasSave();const install=installPrompt&&!isStandalone()?'<button class="menu-util" data-act="install"><span>INSTALL PWA</span><small>OFFLINE</small></button>':'';return `<main class="screen menu"><div class="menu-atmosphere"></div><div class="menu-frame"><div class="menu-topline"><span>LOCKDOWN PROTOCOL</span><span class="signal">● SYSTEM READY</span></div><div class="menu-inner"><div class="brand-block"><div class="eyebrow">Narrative Survival Management</div><div class="logo">LOCKDOWN</div><div class="chapter-mark">CHAPTER 01 // BUNKER 7B</div><p class="tagline">Bunker bukan tujuan akhir.<br>Bunker hanya membeli waktu.</p></div>${saved?saveDossier():''}<div class="menu-actions"><button class="btn primary continue-btn" data-act="continue" ${saved?'':'disabled'}><span>CONTINUE</span><small>${saved?'LANJUTKAN ACTIVE SAVE':'ACTIVE SAVE TIDAK DITEMUKAN'}</small></button><button class="btn newgame-btn" data-act="new"><span>NEW GAME</span><small>MULAI HARI 1 · 07:00</small></button></div><div class="menu-utils"><button class="menu-util" data-act="archive"><span>STORY ARCHIVE</span><small>TRANSMISSION</small></button><button class="menu-util" data-act="settings"><span>SETTINGS</span><small>AUDIO · HAPTIC</small></button><button class="menu-util" data-act="credits"><span>CREDITS</span><small>BUILD INFO</small></button>${install}</div><div class="version">PWA v0.7 · DASHBOARD PASS · OFFLINE READY</div></div></div></main>`}
+function credits(){return `<main class="screen credits-screen"><header class="panel-head"><button class="back" data-act="back">‹</button><div><h2>CREDITS</h2><span>LOCKDOWN // CHAPTER 01</span></div></header><section class="credits-hero"><div class="credits-logo">LOCKDOWN</div><p>Narrative Survival Management · Android portrait · Offline PWA</p></section><section class="card credits-card"><div class="story-tag">PROJECT</div><h3>LOCKDOWN</h3><p>Chapter 1 · Hari 1–7. Survival, bunker management, survivor relationship, radio narrative, dan expedition/scavenging.</p></section><section class="card credits-card"><div class="story-tag">BUILD</div><p>HTML + CSS + Vanilla JavaScript<br>Local save · Offline-first · No account · No telemetry gameplay</p></section><div class="version">PWA v0.7 · LOCAL BUILD</div></main>`}
 
 function prologue(){
  const f=PROLOGUE_FRAMES[view.prologueFrame],n=view.prologueFrame+1;
@@ -268,89 +280,40 @@ function prologue(){
   </div>
  </main>`
 }
-function dashboard(){const q=mainQuest();const stats=[['health','Kesehatan','♥',state.health],['hunger','Lapar','◒',state.hunger],['thirst','Haus','◉',state.thirst],['fatigue','Kelelahan','⌁',state.fatigue],['morale','Moral','☺',state.morale],['radiation','Radiasi','☢',state.radiation],['power','Daya','ϟ',state.power],['integrity','Bunker','⬡',state.integrity]];const stations=[['radio','Radio','⌁','Sinyal & arsip'],['medis','Medis','✚','Obat & recovery'],['gudang','Gudang','▣','Food & drinks'],['kasur','Kasur','▱','Tidur & pulih'],['security','Keamanan','◉','Scan & repair'],['generator','Generator','ϟ','Fuel & daya'],['workbench','Meja Kerja','⚒','Craft & upgrade'],['expedition','Ekspedisi','⌖','Scavenge & story']];return `<main class="screen"><header class="topbar"><div class="grow"><div class="day">HARI ${state.day} · ${worldCond().name.toUpperCase()}</div><div class="clock">${fmtHour()}</div></div><div class="header-meta">${overall()}<br>Daya ${Math.round(state.power)}%</div><button class="icon-btn" data-act="skip">+1H</button><button class="icon-btn" data-act="menu">☰</button></header>${isGameOver()?`<section class="card quest"><div class="story-tag">GAME OVER</div><strong>${state.health<=0?'Tubuh lo tidak bertahan.':'Bunker runtuh.'}</strong><p>Save ini tidak bisa melanjutkan gameplay. Mulai ulang dari Settings atau New Game.</p></section>`:''}<section class="card quest"><div class="card-title"><h2>Main Quest</h2><span class="label">Stage ${Math.min(state.progression.mainStage,10)}/10</span></div><strong>${q[0]}</strong><p>${q[1]}</p><div class="step">Direction before data.</div></section><div class="section-head"><h3>Status</h3><span>${overall()}</span></div><section class="stats">${stats.map(([k,n,i,v])=>`<div class="stat ${statClass(k,v)}"><div class="stat-head"><span>${i} ${n}</span><span class="stat-value">${Math.round(v)}</span></div><div class="bar"><i style="width:${k==='hunger'||k==='thirst'||k==='fatigue'||k==='radiation'?v:Math.max(2,v)}%"></i></div></div>`).join('')}</section><div class="section-head"><h3>Station</h3><span>2 × 4</span></div><section class="station-grid">${stations.map(([id,n,ico,sub])=>`<button class="station ${stationLocked(id)||isGameOver()?'locked':''}" data-panel="${id}" ${stationLocked(id)||isGameOver()?'disabled':''}><span class="ico">${ico}</span><span><b>${n}</b><small>${sub}</small></span>${!stationLocked(id)&&['generator','medis','kasur','security','workbench'].includes(id)?`<span class="badge">LV ${state.upgrades[id==='security'?'keamanan':id]}</span>`:''}</button>`).join('')}</section>${state.survivors.length?`<div class="section-head"><h3>Survivor</h3><span>Tension ${Math.round(state.relations.tension)}</span></div><section class="card survivor-list">${state.survivors.map(s=>`<button class="survivor" data-survivor="${s.id}"><div class="avatar">${s.name[0]}</div><div class="grow"><b>${s.name}</b><small>${s.role} · ${s.skill}</small></div><div class="trust">${Math.round(s.trust)}</div></button>`).join('')}</section>`:''}<div class="section-head"><h3>Daily Objective</h3><span>${state.dailyObjectives.filter(x=>x.done).length}/3</span></div><section class="card">${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}</section><div class="section-head"><h3>Activity Log</h3><span>terbaru</span></div><section class="card">${state.logs.length?state.logs.slice(0,7).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section><div class="version">LOCKDOWN · PWA v0.6 · LOCAL SAVE · OFFLINE</div></main>`}
-function panel(){
- const p=view.panel;
- let title='';
- let body='';
- const res=`<div class="resource-row"><span class="pill">Komponen <b>${state.scrap}</b></span><span class="pill">Filter <b>${state.filters}</b></span><span class="pill">Daya <b>${Math.round(state.power)}</b></span></div>`;
-
- if(p==='gudang'){
-  title='Gudang';
-  const foods=Object.entries(state.items.foods).filter(([,x])=>x.qty>0).map(([id,x])=>`<div class="item"><b>${x.name}</b><div class="qty">×${x.qty}</div><p>${id==='snack'?'Lapar -12 · Moral +2':'Lapar -28 · Haus +4 · Moral +1'}</p><button class="btn" data-use-food="${id}">GUNAKAN</button></div>`).join('')||'<div class="card">Persediaan makanan kosong.</div>';
-  const drinks=Object.entries(state.items.drinks).filter(([,x])=>x.qty>0).map(([id,x])=>`<div class="item"><b>${x.name}</b><div class="qty">×${x.qty}</div><p>${id==='water'?'Haus -28':'Haus -8 · Fatigue -18 · Moral +2 · crash 3h'}</p><button class="btn" data-use-drink="${id}">MINUM</button></div>`).join('')||'<div class="card">Persediaan minuman kosong.</div>';
-  body=`<p class="hero-line">Inventory contextual: food dan minuman. Item dengan qty 0 hilang dari daftar.</p>${res}<div class="section-head"><h3>Food</h3><span>${totalFood()} item</span></div><div class="item-grid">${foods}</div><div class="section-head"><h3>Drinks</h3><span>${totalDrink()} item</span></div><div class="item-grid">${drinks}</div>`;
- }
-
- if(p==='generator'){
-  title='Generator';
-  const raka=survivor('raka');
-  const gain=[0,35,42,50][state.upgrades.generator]+(raka&&raka.trust>=40?5:0);
-  body=`<p class="hero-line">Drain saat ini ±${genDrain().toFixed(2)} daya/jam. Fuel mengisi +${gain} daya.</p>${res}<div class="action-list"><button class="action ${qty('fuel.fuel')?'':'disabled'}" data-act="fuel"><div class="action-top"><div class="grow"><b>Gunakan Fuel</b><p>Isi ulang generator.</p></div><strong>×${qty('fuel.fuel')}</strong></div><div class="costs"><span class="cost">+${gain} Daya</span><span class="cost">0 jam</span></div>${qty('fuel.fuel')?'':'<div class="reason">Fuel habis.</div>'}</button>${upgradeCard('generator','Generator')}</div>`;
- }
-
- if(p==='medis'){
-  title='Medis';
-  const heal=28+(state.upgrades.medis-1)*5+(survivor('maya')?8:0);
-  body=`<p class="hero-line">Obat menyembuhkan Health dan menurunkan radiasi. Upgrade dan skill Maya stack.</p>${res}<div class="action-list"><button class="action ${qty('meds.med')?'':'disabled'}" data-act="med"><b>Obat Darurat ×${qty('meds.med')}</b><p>Gunakan satu dosis.</p><div class="costs"><span class="cost">Health +${heal}</span><span class="cost">Radiasi -8</span></div></button>${upgradeCard('medis','Medis')}</div>`;
- }
-
- if(p==='kasur'){
-  title='Kasur';
-  body=`<p class="hero-line">Tidur memulihkan fatigue dan health. Lapar/haus tetap berjalan.</p>${res}<div class="range-wrap"><div class="range-top"><span>Durasi Tidur</span><span id="sleepLabel">4 jam</span></div><input id="sleepRange" type="range" min="1" max="8" value="4"/><button class="btn primary" data-act="sleep">TIDUR</button></div><div class="action-list" style="margin-top:10px">${upgradeCard('kasur','Kasur')}</div>`;
- }
-
- if(p==='security'){
-  title='Keamanan';
-  const c=[0,5,4,3][state.upgrades.keamanan];
-  const rep=[0,10,13,16][state.upgrades.keamanan];
-  body=`<p class="hero-line">Scan memberi -2 radiasi untuk semua ekspedisi hari ini. Repair memulihkan integritas bunker.</p>${res}<div class="action-list"><button class="action ${state.power>=c?'':'disabled'}" data-act="scan"><b>Pindai Area Luar</b><p>${state.world.scoutedDay===state.day?'Area hari ini sudah dipindai.':'Buka data kondisi permukaan.'}</p><div class="costs"><span class="cost">${c} Daya</span><span class="cost">+1 jam</span><span class="cost">Expedition Rad -2</span></div></button><button class="action ${state.scrap>=2?'':'disabled'}" data-act="repair"><b>Repair Bunker</b><p>Perkuat struktur dari station keamanan.</p><div class="costs"><span class="cost">2 Komponen</span><span class="cost">Bunker +${rep}</span></div></button>${upgradeCard('keamanan','Keamanan')}</div>`;
- }
-
- if(p==='workbench'){
-  title='Meja Kerja';
-  const fc=[0,3,2,1][state.upgrades.workbench];
-  const pc=state.upgrades.workbench===3?3:4;
-  body=`<p class="hero-line">Crafting dan gateway upgrade bunker.</p>${res}<div class="action-list"><button class="action ${state.scrap>=fc?'':'disabled'}" data-craft="filter"><b>Craft Filter</b><p>Untuk event ventilasi dan risiko radiasi.</p><div class="costs"><span class="cost">${fc} Komponen</span><span class="cost">+1 Filter</span></div></button><button class="action ${state.scrap>=pc?'':'disabled'}" data-craft="plate"><b>Craft Bunker Plate</b><p>Perkuat integritas.</p><div class="costs"><span class="cost">${pc} Komponen</span><span class="cost">Bunker +15</span></div></button>${upgradeCard('workbench','Meja Kerja')}</div>`;
- }
-
- if(p==='radio'){
-  title='Radio';
-  body=`<p class="hero-line">Noise, story transmission, dan archive. Setiap penggunaan biaya 4 Daya dan +1 jam.</p>${res}<div class="action-list"><button class="action ${state.power>=4?'':'disabled'}" data-act="radio-story"><b>Story Transmission</b><p>Ikuti sinyal yang relevan dengan progression saat ini.</p><div class="costs"><span class="cost">4 Daya</span><span class="cost">+1 jam</span></div></button><button class="action ${state.power>=4?'':'disabled'}" data-act="radio-random"><b>Random Scan</b><p>Cari flavor transmission dari permukaan.</p><div class="costs"><span class="cost">4 Daya</span><span class="cost">+1 jam</span></div></button></div><div class="section-head"><h3>Archive</h3><span>${state.story.transmissions} tx</span></div><div class="card"><div class="log">ECHO response: ${state.story.echoResponse||'—'}</div><div class="log">Relay: ${state.story.relayRecovered?'Recovered':'—'}</div><div class="log">HAVEN: ${state.story.havenChoice||'—'}</div><div class="log">Evidence: ${state.story.havenEvidence}</div></div>`;
- }
-
- if(p==='expedition'){
-  title='Ekspedisi';
-  const ok=state.health>35&&state.fatigue<75&&state.radiation<70&&state.hunger<82&&state.thirst<82;
-  const warning=ok?'':'<div class="card"><b>Lanjut Jelajah nonaktif.</b><p class="hero-line">Butuh Health >35, Fatigue <75, Rad <70, Hunger <82, Thirst <82.</p></div>';
-  const locations=Object.entries(LOCS).filter(([id])=>state.world.unlocked.includes(id)).map(([id,l])=>{
-   const scout=state.world.scoutedDay===state.day?'<span class="cost">Scout -2 Rad</span>':'';
-   return `<div class="location"><div class="location-top"><b>${l.name}</b><span class="risk ${l.risk.toLowerCase()}">${l.risk}</span></div><p>${l.focus}</p><div class="costs"><span class="cost">${l.time} jam</span><span class="cost">Base Rad ${l.rad}</span>${scout}</div><button class="btn ${id==='relay'?'primary':''}" data-exp="${id}" ${ok?'':'disabled'}>MULAI EKSPEDISI</button></div>`;
-  }).join('');
-  body=`<p class="hero-line">Pilih lokasi, baca waktu/radiasi/risk, lalu bawa loot pulang. Security scan mengurangi radiasi hari ini.</p>${res}${warning}<div>${locations}</div>`;
- }
-
- if(p==='survivor'){
-  title='Survivor';
-  const s=survivor(view.survivorId)||state.survivors[0];
-  if(s){
-   const trustLabel=s.trust>=70?'Percaya':s.trust>=45?'Netral':s.trust>=25?'Waspada':'Curiga';
-   body=`<div class="card"><div class="survivor"><div class="avatar">${s.name[0]}</div><div class="grow"><b>${s.name}</b><small>${s.role} · ${s.personality}</small></div><div class="trust">${Math.round(s.trust)}</div></div><p class="hero-line">Skill: ${s.skill}. Trust: ${trustLabel}.</p></div><div class="action-list"><button class="action" data-talk="${s.id}"><b>Bicara</b><p>Trust +4 · Moral +2 · sekali/hari.</p></button><button class="action" data-feed="${s.id}"><b>Bagikan Makanan</b><p>Consume 1 makanan · Trust +7 · Moral +3.</p></button><button class="action ${s.trust>=50?'':'disabled'}" data-help="${s.id}"><b>${s.id==='maya'?'Bantuan Medis':'Tuning Generator'}</b><p>${s.id==='maya'?'Health +8 · Moral +2':'Daya +8 · Moral +1'} · Trust 50+ · sekali/hari.</p></button></div>`;
-  } else body='<div class="card">Belum ada survivor.</div>';
- }
-
- if(p==='archive'){
-  title='Story Archive';
-  const visited=state.world.visited.map(x=>LOCS[x]?.name||x).join(', ')||'—';
-  body=`<div class="card"><div class="log">Chapter: ${state.story.chapterComplete?'1 Complete':'1 In Progress'}</div><div class="log">Transmission: ${state.story.transmissions}</div><div class="log">HAVEN Evidence: ${state.story.havenEvidence}</div><div class="log">Finale Choice: ${state.story.finaleChoice||'—'}</div><div class="log">Visited: ${visited}</div></div><button class="btn" data-act="replay-prologue">REPLAY PROLOGUE</button>`;
- }
-
- if(p==='settings'){
-  title='Settings';
-  body=settingsPanel();
- }
-
- return `<main class="screen panel"><header class="panel-head"><button class="back" data-act="back">←</button><h1>${title}</h1><small>D${state.day} ${fmtHour()}</small></header>${body}</main>`;
+function dashboard(){
+ const q=mainQuest();
+ const stats=[['health','Kesehatan','♥',state.health],['hunger','Lapar','◒',state.hunger],['thirst','Haus','◉',state.thirst],['fatigue','Kelelahan','⌁',state.fatigue],['morale','Moral','☺',state.morale],['radiation','Radiasi','☢',state.radiation],['power','Daya','ϟ',state.power],['integrity','Bunker','⬡',state.integrity]];
+ const stations=[['radio','Radio','⌁','Sinyal & arsip'],['medis','Medis','✚','Obat & recovery'],['gudang','Gudang','▣','Food & drinks'],['kasur','Kasur','▱','Tidur & pulih'],['security','Keamanan','◉','Scan & repair'],['generator','Generator','ϟ','Fuel & daya'],['workbench','Meja Kerja','⚒','Craft & upgrade'],['expedition','Ekspedisi','⌖','Scavenge & story']];
+ const done=state.dailyObjectives.filter(x=>x.done).length;
+ const condition=overall();
+ const activeOnboarding=state.onboarding<4?['gudang','generator','security','radio'][state.onboarding]:'';
+ const world=worldCond();
+ return `<main class="screen dashboard-screen">
+ <header class="topbar dashboard-topbar">
+  <div class="grow"><div class="day">HARI ${state.day} · BUNKER 7B</div><div class="clock">${fmtHour()}</div></div>
+  <div class="condition-chip ${condition.toLowerCase()}"><span>${condition}</span><small>${world.name}</small></div>
+  <button class="time-btn" data-act="skip"><b>+1</b><small>JAM</small></button>
+  <button class="icon-btn" data-act="menu" aria-label="Menu">☰</button>
+ </header>
+ <section class="bunker-strip"><span><i>ϟ</i>Daya <b>${Math.round(state.power)}%</b></span><span><i>⬡</i>Bunker <b>${Math.round(state.integrity)}%</b></span><span><i>☢</i>Rad <b>${Math.round(state.radiation)}</b></span></section>
+ ${isGameOver()?`<section class="card gameover-card"><div class="story-tag">GAME OVER</div><strong>${state.health<=0?'Tubuh lo tidak bertahan.':'Bunker runtuh.'}</strong><p>Save ini tidak bisa melanjutkan gameplay. Mulai ulang dari Settings atau New Game.</p></section>`:''}
+ <section class="quest command-card">
+  <div class="quest-kicker"><span>MAIN QUEST</span><span>STAGE ${Math.min(state.progression.mainStage,10)} / 10</span></div>
+  <strong>${q[0]}</strong><p>${q[1]}</p>
+  <div class="quest-progress"><i style="width:${Math.min(100,(Math.min(state.progression.mainStage,10)/10)*100)}%"></i></div>
+  <div class="quest-footer"><span>PRIORITAS UTAMA</span><b>${state.onboarding<4?'GUIDED ONBOARDING':'CHAPTER 01'}</b></div>
+ </section>
+ <div class="section-head"><h3>Status</h3><span>${condition} · ${world.name}</span></div>
+ <section class="stats dashboard-stats">${stats.map(([k,n,i,v])=>`<div class="stat ${statClass(k,v)}"><div class="stat-head"><span class="stat-name"><i>${i}</i>${n}</span><span class="stat-value">${Math.round(v)}</span></div><div class="bar"><i style="width:${v}%"></i></div><div class="stat-foot"><span>${statState(k,v)}</span><small>${['hunger','thirst','fatigue','radiation'].includes(k)?'RENDAH = BAIK':'TINGGI = BAIK'}</small></div></div>`).join('')}</section>
+ <div class="section-head"><h3>Station</h3><span>${state.onboarding<4?'Onboarding '+(state.onboarding+1)+'/4':'8 station online'}</span></div>
+ <section class="station-grid dashboard-stations">${stations.map(([id,n,ico,sub])=>{const locked=stationLocked(id)||isGameOver();const reason=stationLockReason(id);const upgradeKey=id==='security'?'keamanan':id;const hasLv=['generator','medis','kasur','security','workbench'].includes(id);return `<button class="station ${locked?'locked':''} ${id===activeOnboarding?'active-objective':''}" data-panel="${id}" ${locked?'disabled':''}><div class="station-top"><span class="ico">${ico}</span>${hasLv&&!stationLocked(id)?`<span class="badge">LV ${state.upgrades[upgradeKey]}</span>`:''}</div><span class="station-copy"><b>${n}</b><small>${sub}</small></span>${reason?`<span class="lock-reason">${reason}</span>`:''}</button>`}).join('')}</section>
+ ${state.survivors.length?`<div class="section-head"><h3>Survivor</h3><span>Tension ${Math.round(state.relations.tension)} · ${state.relations.tension>=65?'Tegang':state.relations.tension>=30?'Ada Gesekan':'Stabil'}</span></div><section class="card survivor-list survivor-dashboard">${state.survivors.map(s=>`<button class="survivor" data-survivor="${s.id}"><div class="avatar">${s.name[0]}</div><div class="grow"><b>${s.name}</b><small>${s.role} · ${s.skill}</small></div><div class="trust"><small>TRUST</small>${Math.round(s.trust)}</div></button>`).join('')}</section>`:''}
+ <div class="section-head"><h3>Daily Objective</h3><span>${done}/3 · reward otomatis</span></div>
+ <section class="card objective-card"><div class="daily-progress"><i style="width:${done/3*100}%"></i></div>${state.dailyObjectives.map(o=>`<div class="objective ${o.done?'done':''}"><span class="dot">${o.done?'✓':''}</span><span>${o.text}</span></div>`).join('')}<div class="daily-reward"><span>3/3 REWARD</span><b>+2 Komponen · +1 Filter</b></div></section>
+ <div class="section-head"><h3>Activity Log</h3><span>4 terbaru</span></div>
+ <section class="card log-card">${state.logs.length?state.logs.slice(0,4).map(l=>`<div class="log"><time>D${l.day} ${fmtHour(l.hour)}</time>${l.text}</div>`).join(''):'<div class="log">Belum ada aktivitas.</div>'}</section>
+ <div class="version">LOCKDOWN · PWA v0.7 · DASHBOARD PASS · OFFLINE</div>
+ </main>`;
 }
 function upgradeCard(key,label){let lvl=state.upgrades[key],cost=lvl===1?5:lvl===2?9:0;return `<button class="action ${lvl>=3||state.scrap<cost?'disabled':''}" data-upgrade="${key}" ${lvl>=3?'disabled':''}><b>${label} Lv${lvl} ${lvl>=3?'· MAX':'→ Lv'+(lvl+1)}</b><p>${lvl>=3?'Upgrade Maksimum. Tetap terlihat sebagai state MAX.':'Tingkatkan efisiensi station.'}</p><div class="costs"><span class="cost">${lvl>=3?'MAX':cost+' Komponen'}</span></div>${lvl<3&&state.scrap<cost?'<div class="reason">Komponen tidak cukup.</div>':''}</button>`}
 function settingsPanel(){const range=(key,label)=>`<label class="setting-range"><span>${label}<b id="${key}Label">${state.settings[key]}</b></span><input type="range" min="0" max="100" value="${state.settings[key]}" data-volume="${key}"></label>`;return `<div class="card setting-card"><div class="objective"><span>SFX</span><span style="margin-left:auto"><input type="checkbox" data-setting="sfx" ${state.settings.sfx?'checked':''}></span></div><div class="objective"><span>Ambience</span><span style="margin-left:auto"><input type="checkbox" data-setting="ambience" ${state.settings.ambience?'checked':''}></span></div><div class="objective"><span>Vibration</span><span style="margin-left:auto"><input type="checkbox" data-setting="vibration" ${state.settings.vibration?'checked':''}></span></div></div><div class="card setting-card">${range('master','Master Volume')}${range('sfxVol','SFX Volume')}${range('ambienceVol','Ambience Volume')}</div><p class="settings-note">Ambience memakai Bunker AMBIENCE.wav dengan crossfade-loop selama gameplay. Radio/Craft/Heal tetap memakai SFX asset lokal; Heal hanya memainkan detik 9–11.</p><button class="btn" style="width:100%;margin-bottom:8px" data-act="to-menu">MAIN MENU</button><button class="btn danger" style="width:100%" data-act="restart">RESTART GAME</button>`}
