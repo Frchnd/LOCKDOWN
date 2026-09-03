@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v10-storage-station-pass';
+const CACHE='lockdown-pwa-v10-1-cache-hotfix';
 const CORE=[
- './','./index.html','./app.css','./app.js','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.10.1','./app.js?v=0.10.1','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',
@@ -19,16 +19,36 @@ const AUDIO=[
 self.addEventListener('install',e=>e.waitUntil(
  caches.open(CACHE).then(async c=>{
   await c.addAll(CORE);
-  await Promise.allSettled(AUDIO.map(async url=>{const r=await fetch(url);if(r.ok)await c.put(url,r)}));
+  await Promise.allSettled(AUDIO.map(async url=>{const r=await fetch(url,{cache:'no-store'});if(r.ok)await c.put(url,r)}));
  }).then(()=>self.skipWaiting())
 ));
-self.addEventListener('activate',e=>e.waitUntil(
- caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
-));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{
+ const keys=await caches.keys();
+ const hadOld=keys.some(k=>k.startsWith('lockdown-pwa-')&&k!==CACHE);
+ await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
+ await self.clients.claim();
+ if(hadOld){
+  const wins=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  await Promise.all(wins.map(c=>c.navigate(c.url).catch(()=>null)));
+ }
+})()));
 self.addEventListener('fetch',e=>{
  if(e.request.method!=='GET')return;
+ const url=new URL(e.request.url);
+ const same=url.origin===self.location.origin;
+ const shell=same&&(e.request.mode==='navigate'||/\/(?:index\.html|app\.js|app\.css|manifest\.webmanifest)$/.test(url.pathname));
+ if(shell){
+  e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{
+   if(r&&r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));}
+   return r;
+  }).catch(async()=>{
+   const cached=await caches.match(e.request);
+   return cached||(e.request.mode==='navigate'?caches.match('./index.html'):new Response('',{status:503,statusText:'Offline'}));
+  }));
+  return;
+ }
  e.respondWith(caches.match(e.request).then(cached=>cached||fetch(e.request).then(r=>{
   if(r&&r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));}
   return r;
- }).catch(()=>e.request.mode==='navigate'?caches.match('./index.html'):new Response('',{status:503,statusText:'Offline'}))));
+ }).catch(()=>new Response('',{status:503,statusText:'Offline'}))));
 });
