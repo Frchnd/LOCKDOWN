@@ -1,10 +1,12 @@
-# LOCKDOWN PWA v0.8 — Radio Station Pass
+# LOCKDOWN PWA v0.9 — Medical Station Pass
 
-- Restored full-panel station renderer accidentally omitted in v0.7.
-- Radio redesigned as a dedicated bunker communication console.
-- Added live signal state, waveform treatment, mechanical cost/time telemetry, and clearer Story vs Random Scan actions.
-- Added local Radio Archive entries for scans and story transmissions.
-- Day 3 ECHO-7 Relay coordinates are archived automatically.
-- Existing `lockdown_save` remains compatible; `radioArchive` is filled through save validation defaults.
-- Radio Static SFX behavior remains tied to opening/closing Radio.
-- Service worker cache bumped to v8.
+- Medis full-panel didesain ulang sebagai diagnostic/treatment station.
+- Health dan Radiasi tampil berdampingan dengan status STABIL/WASPADA/KRITIS.
+- Obat Darurat menampilkan breakdown heal: base + upgrade Medis + bonus Maya.
+- Preview sebelum treatment menunjukkan Health/Radiasi setelah aksi dan efek aktual setelah clamp 0–100.
+- Stock Obat Darurat dan alasan disabled tampil jelas.
+- Maya tampil sebagai Medical Support jika sudah bergabung.
+- Heal SFX tetap dipanggil melalui sistem healing terpusat dan hanya memainkan detik 9–11.
+- Log treatment sekarang mencatat heal/radiation reduction aktual, bukan angka teoritis yang bisa terpotong cap.
+- Cache PWA dinaikkan ke v9.
+- Save key tetap `lockdown_save` dan kompatibel dengan save sebelumnya.
