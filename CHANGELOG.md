@@ -1,45 +1,25 @@
-# LOCKDOWN PWA v0.2 — Polish Pass
+# LOCKDOWN PWA v0.5 — Cinematic Prologue
 
-Update ini tidak mengubah save key (`lockdown_save`), jadi save v0.1 tetap dapat dilanjutkan.
+## Prologue integration
+- 7 fixed cinematic images integrated into New Game and Story Archive replay.
+- Portrait assets: 900×1600 WebP, optimized for phone-first display.
+- Frames follow the Chapter 1 master specification:
+  1. Siaran Darurat
+  2. Langit Menyala
+  3. Kota Runtuh
+  4. Di Bawah Rumah
+  5. Lockdown Engaged
+  6. Sistem Kembali Hidup
+  7. Bertahan Bukan Tujuan Akhir
+- New cinematic vignette, image drift, fade-in curtain, copy entrance, progress indicator, and safe-area layout.
+- Tap anywhere outside the button or swipe left to advance; button remains available for explicit navigation.
+- Prologue replay still works from Story Archive.
 
-## Ditambahkan
-- Web Audio API bunker ambience sintetis/offline.
-- Radio static burst SFX.
-- Upgrade hammer SFX: 3 hit pada 0.00 / 0.19 / 0.38 detik.
-- Damage low-impact SFX.
-- Master, SFX, dan Ambience volume sliders.
-- Audio suspend/resume saat app background/foreground.
-- Screen shake + red flash saat damage/radiation feedback.
-- Install PWA button saat browser menyediakan install prompt.
-- Visual polish: scanline, vignette, system strip, tighter station/card treatment.
-- Service worker cache bumped ke `lockdown-pwa-v2`.
+## PWA/cache
+- Service-worker cache bumped to `lockdown-pwa-v5-cinematic-prologue`.
+- All 7 prologue WebP assets are part of the offline core cache.
+- Non-navigation offline misses no longer receive `index.html` as a fake image/audio response.
 
-## Deploy ke GitHub Pages
-Extract ZIP lalu replace/upload file di root repo. Tidak perlu `.github` atau GitHub Actions jika Pages sudah memakai `Deploy from a branch`.
-
-File yang penting ikut terganti: `index.html`, `app.css`, `app.js`, `sw.js`.
-Folder `assets/` tetap wajib ada.
-
-Setelah GitHub Pages selesai publish, refresh halaman. Jika browser masih menampilkan `PWA v0.1`, tutup tab/app lalu buka kembali. Service worker v2 akan mengganti cache lama.
-
-## v0.3 — Audio Asset Pass
-- Radio memakai `Radio Static SFX.wav` ketika panel Radio dibuka dan berhenti saat keluar.
-- Craft sukses memakai `Craft item SFX.wav`.
-- Semua treatment healing memakai `Heal SFX.wav`, tetapi runtime hanya memainkan detik 9.00–11.00.
-- Ambience sintetis diganti arsitekturnya untuk memakai `sound ambiene.wav` sebagai full-buffer loop lokal/offline.
-- Cache dinaikkan ke `lockdown-pwa-v3` dan audio dicache secara resilient.
-
-## v0.3-noamb
-- Ambience asset diparkir sementara.
-- Service worker hanya mencoba cache Radio/Craft/Heal.
-- Settings ambience disembunyikan sementara agar tidak memberi kontrol palsu.
-- Mapping Heal tetap terpusat pada applyHealing() dengan playback 9.00–11.00 detik.
-
-
-## v0.4 — Bunker Ambience Loop Pass
-- Ambience source is now `Bunker AMBIENCE.wav`.
-- Runtime uses overlapping buffer sources with adaptive 1.25–4.0 second crossfade to hide loop seams.
-- Ambience plays only while the player is inside the game screen, not Main Menu / Prologue.
-- Ambience fades and stops when backgrounded, then resumes after foregrounding.
-- Ambience toggle and volume control restored in Settings.
-- Service worker cache bumped to `lockdown-pwa-v4-ambience`.
+## Compatibility
+- Existing `lockdown_save` save data is preserved.
+- Audio paths and gameplay systems are unchanged from the previous build.
