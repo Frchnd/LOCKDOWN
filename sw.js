@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v11-sleep-station-pass';
+const CACHE='lockdown-pwa-v12-security-station-pass';
 const CORE=[
- './','./index.html','./app.css?v=0.11','./app.js?v=0.11','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.12','./app.js?v=0.12','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',
