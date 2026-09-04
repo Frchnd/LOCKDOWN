@@ -431,3 +431,141 @@ body{min-width:0}
 .setting-range input[type="range"]::-moz-range-track{height:5px;border-radius:999px;background:#263b30;border:1px solid #3c5747}
 .setting-range input[type="range"]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#9addaa;border:2px solid #163022;box-shadow:0 3px 10px rgba(0,0,0,.35)}
 .panel-tab{min-height:44px}
+
+
+/* ==========================================================================
+   v0.19.2 — INFORMATION ARCHITECTURE CLEANUP
+   One primary task per screen. One page scroll. No duplicate status summaries.
+   ========================================================================== */
+:root{
+  --ia-side:16px;
+  --ia-section:20px;
+  --ia-card-gap:12px;
+  --ia-card-pad:14px;
+  --ia-control-gap:10px;
+}
+.screen.panel,.dashboard-screen{
+  padding-left:max(var(--ia-side),env(safe-area-inset-left));
+  padding-right:max(var(--ia-side),env(safe-area-inset-right));
+  overflow-x:hidden;
+}
+.screen.panel > * + .section-head,
+.dashboard-screen > * + .section-head{margin-top:var(--ia-section)}
+.section-head{margin-bottom:10px}
+.action-list,.station-grid,.warehouse-grid,.workbench-craft-grid,.upgrade-grid,.exp-location-list,.questlog-stack{gap:var(--ia-card-gap)}
+.btn,.action,.station,.quest-log-link,.warehouse-use,.sleep-confirm,.radio-archive-link{min-height:48px}
+.focus-two{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.generator-telemetry.compact-three{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.generator-output.resource{min-width:88px}
+.security-status.single-focus,.questlog-command.single-focus,.archive-command.single-focus{grid-template-columns:1fr!important}
+
+/* Workbench uses a natural flow: resource -> fabrication -> upgrade. */
+.workbench-status{margin-bottom:var(--ia-section)}
+.workbench-craft-grid{margin-bottom:var(--ia-section)}
+.upgrade-grid{margin-bottom:8px}
+
+/* Radio is for active signal operations. Historical records live in Story Archive. */
+.radio-archive-link{
+  width:100%;margin-top:var(--ia-section);padding:14px 16px;display:grid;gap:4px;text-align:left;
+  border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,rgba(143,208,157,.08),rgba(20,33,25,.82));color:var(--text)
+}
+.radio-archive-link>span{font-size:10px;letter-spacing:.16em;color:var(--accent)}
+.radio-archive-link>b{font-size:13px;letter-spacing:.04em}
+.radio-archive-link>small{font-size:11px;color:var(--muted)}
+
+/* Expedition keeps unlocked missions readable and locked locations compact. */
+.priority-list .exp-location{border-color:rgba(143,208,157,.38)}
+.exp-locked-list{display:grid;gap:8px;margin-bottom:8px}
+.exp-locked-row{
+  min-height:54px;display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:10px;
+  padding:10px 12px;border:1px solid rgba(159,177,163,.12);border-radius:10px;
+  background:rgba(20,33,25,.45);opacity:.72
+}
+.exp-locked-row>div{min-width:0;display:grid;gap:2px}
+.exp-locked-row span{font-size:9px;letter-spacing:.14em;color:var(--muted)}
+.exp-locked-row b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp-locked-row small{font-size:10px;color:var(--muted);text-align:right}
+.exp-locked-row i{font-style:normal;color:var(--muted)}
+.exp-locked-row.story{border-color:rgba(143,208,157,.2)}
+
+/* Only historical overflow collapses. Primary task content never hides behind tabs. */
+.quest-completed,.archive-more{
+  margin-top:var(--ia-section);border:1px solid rgba(159,177,163,.14);border-radius:12px;
+  background:rgba(20,33,25,.46);overflow:hidden
+}
+.quest-completed>summary,.archive-more>summary{
+  min-height:48px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  cursor:pointer;list-style:none;color:var(--text)
+}
+.quest-completed>summary::-webkit-details-marker,.archive-more>summary::-webkit-details-marker{display:none}
+.quest-completed>summary span,.archive-more>summary span{font-size:12px;font-weight:700;letter-spacing:.05em}
+.quest-completed>summary b,.archive-more>summary b{font-size:11px;color:var(--accent)}
+.quest-completed[open]>summary,.archive-more[open]>summary{border-bottom:1px solid rgba(159,177,163,.12)}
+.quest-completed>.questlog-stack,.archive-more>.archive-radio{padding:12px;margin:0}
+.archive-state.compact-five{grid-template-columns:repeat(2,minmax(0,1fr))}
+.archive-state.compact-five>div:last-child{grid-column:1/-1}
+
+/* Old tab components remain harmless for backwards CSS compatibility but are no longer used. */
+.panel-tabs{display:none!important}
+.tab-content{display:contents}
+
+@media (min-width:390px){
+  .archive-state.compact-five{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .archive-state.compact-five>div:last-child{grid-column:auto}
+}
+@media (max-width:360px){
+  :root{--ia-side:14px;--ia-section:18px;--ia-card-gap:10px;--ia-card-pad:12px}
+  .generator-telemetry.compact-three{grid-template-columns:1fr 1fr!important}
+  .generator-telemetry.compact-three>div:last-child{grid-column:1/-1}
+  .exp-locked-row{grid-template-columns:minmax(0,1fr) 16px}
+  .exp-locked-row>small{grid-column:1/-1;text-align:left}
+}
+
+
+/* v0.19.2 — Information Architecture Cleanup */
+:root{
+  --ui-side:16px;
+  --ui-section:20px;
+  --ui-card-gap:12px;
+  --ui-card-pad:14px;
+  --ui-row-gap:8px;
+  --ui-control:48px;
+}
+.screen{padding-left:max(var(--ui-side),env(safe-area-inset-left));padding-right:max(var(--ui-side),env(safe-area-inset-right))}
+.section-head{margin-top:var(--ui-section);margin-bottom:10px}
+.card,.exp-location,.questlog-card,.archive-entry,.radio-archive-row,.workbench-craft,.upgrade-card{padding:var(--ui-card-pad)}
+.action-list,.workbench-craft-grid,.upgrade-grid,.exp-location-list,.questlog-stack,.archive-timeline,.archive-radio{gap:var(--ui-card-gap)}
+button,.btn,.action{min-height:var(--ui-control)}
+/* One source of truth: the eight-stat grid owns bunker vitals on Dashboard. */
+.bunker-strip,.threat-report{display:none!important}
+/* Long information screens use one natural vertical flow instead of tab navigation. */
+.workbench-panel .panel-tabs,
+.expedition-panel .panel-tabs,
+.questlog-panel .panel-tabs,
+.archive-panel .panel-tabs{display:none!important}
+.tab-content{animation:none}
+.exp-locked-list{display:grid;gap:8px}
+.exp-locked-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid rgba(159,177,163,.14);border-radius:12px;background:rgba(20,33,25,.42);opacity:.68}
+.exp-locked-row>div{display:grid;gap:3px;min-width:0}
+.exp-locked-row span{font-size:10px;letter-spacing:.13em;color:var(--muted)}
+.exp-locked-row b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp-locked-row small{max-width:45%;text-align:right;line-height:1.35;color:var(--muted)}
+.exp-empty-note{padding:14px;border:1px dashed rgba(159,177,163,.16);border-radius:12px;color:var(--muted)}
+.story-stack{margin-bottom:4px}
+.quest-completed-collapse{margin-top:var(--ui-section);border:1px solid rgba(159,177,163,.16);border-radius:14px;background:rgba(20,33,25,.35);overflow:hidden}
+.quest-completed-collapse>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 14px;cursor:pointer;font-weight:700}
+.quest-completed-collapse>summary::-webkit-details-marker{display:none}
+.quest-completed-collapse>summary b{font-size:12px;color:var(--muted)}
+.quest-completed-collapse .questlog-stack{padding:0 12px 12px}
+.archive-section-head,.questlog-section-head{padding-top:2px}
+/* Radio owns actions; Story Archive owns the complete history. */
+.radio-archive{max-height:none;overflow:visible}
+.radio-story-state{display:none!important}
+/* Keep sections visually separated without nesting excessive framed boxes. */
+.workbench-efficiency,.workbench-inventory,.security-world,.generator-telemetry,.archive-state{box-shadow:none}
+@media(max-width:360px){
+  :root{--ui-side:14px;--ui-card-pad:12px}
+  .exp-locked-row{align-items:flex-start;flex-direction:column;gap:5px}
+  .exp-locked-row small{max-width:none;text-align:left}
+}
