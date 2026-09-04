@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v15-expedition-encounters';
+const CACHE='lockdown-pwa-v16-survivor-quest';
 const CORE=[
- './','./index.html','./app.css?v=0.15','./app.js?v=0.15','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.16','./app.js?v=0.16','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',
