@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v17-chapter-story';
+const CACHE='lockdown-pwa-v18-emergency-game-state';
 const CORE=[
- './','./index.html','./app.css?v=0.17','./app.js?v=0.17','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.18','./app.js?v=0.18','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',
