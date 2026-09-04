@@ -237,3 +237,97 @@ input[type="checkbox"]{accent-color:var(--accent);width:18px;height:18px}
 .gameover-wrap{align-items:center;background:radial-gradient(circle at 50% 50%,rgba(116,25,19,.26),transparent 48%),rgba(0,0,0,.94);padding-top:calc(18px + env(safe-area-inset-top))}
 .gameover-modal{border-color:#8c4438;background:radial-gradient(circle at 50% 0,rgba(213,92,75,.14),transparent 43%),linear-gradient(160deg,#321613,#0b0b09);text-align:left;box-shadow:0 0 70px rgba(132,35,27,.22),0 35px 120px #000}.gameover-modal .story-tag{color:#e06e5d}.gameover-modal h2{font-size:28px;letter-spacing:.08em;color:#f0d6d0}.gameover-modal p{color:#c0a6a0}.gameover-modal .modal-meta{border-color:#60362f;background:#160b09;color:#c17d70}.gameover-modal .btn.danger{background:linear-gradient(145deg,#6b2d23,#401b16);border-color:#a24e40;color:#f3d7d1}.gameover-modal .btn.ghost{background:#11130f;border-color:#403b33;color:#aeb7af}
 .gameover-card strong{display:block;font-size:14px;margin:5px 0;color:#f0c8c0}.gameover-card p{margin:0;color:#b69b95}
+
+/* v0.19 — Global UI/UX Polish */
+:root{
+ --radius-xs:9px;--radius-sm:12px;--radius-md:15px;--radius-lg:18px;--radius-xl:22px;
+ --edge:rgba(143,208,157,.16);--edge-strong:rgba(143,208,157,.28);
+ --surface-0:#08120c;--surface-1:#0d1912;--surface-2:#13221a;--surface-3:#1a2b21;
+ --shadow-soft:0 12px 32px rgba(0,0,0,.22);--shadow-deep:0 24px 64px rgba(0,0,0,.38);
+ --tap:48px;
+}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+button{touch-action:manipulation;min-width:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:not(:disabled):active{transform:translateY(1px) scale(.995);filter:brightness(.97)}
+.screen{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));padding-bottom:calc(24px + env(safe-area-inset-bottom));}
+.panel,.dashboard-screen,.credits-screen{background:radial-gradient(circle at 50% -12%,rgba(143,208,157,.055),transparent 30%),linear-gradient(180deg,#08120c 0%,#07100b 55%,#061009 100%)}
+.panel{padding-bottom:calc(34px + env(safe-area-inset-bottom));}
+.panel-head,.dashboard-topbar{top:0;margin-left:-2px;margin-right:-2px;padding-left:2px;padding-right:2px;background:linear-gradient(180deg,rgba(7,16,11,.985) 0%,rgba(7,16,11,.965) 72%,rgba(7,16,11,.82) 88%,rgba(7,16,11,0) 100%);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.panel-head{min-height:62px;padding-bottom:15px}.panel-head h1,.panel-head h2{letter-spacing:.045em}.panel-head small,.panel-head span{line-height:1.25}
+.back,.icon-btn,.time-btn{min-width:var(--tap);width:var(--tap);height:var(--tap);border-radius:var(--radius-sm);box-shadow:inset 0 1px rgba(255,255,255,.035),var(--shadow-soft)}
+.card{border-color:var(--edge);border-radius:var(--radius-md);box-shadow:var(--shadow-soft);background:linear-gradient(155deg,rgba(24,40,30,.96),rgba(11,23,16,.96))}
+.section-head{margin-top:20px;margin-bottom:9px;padding:0 2px}.section-head h3{font-size:11px!important;line-height:1.15;letter-spacing:.14em}.section-head span{font-size:9px!important;line-height:1.25;color:#809386}
+.btn,.action,.station,.menu-util,.survivor,.security-action,.medical-treatment,.workbench-craft,.generator-refuel,.sleep-confirm,.quest-log-link{transition:transform .11s ease,filter .11s ease,border-color .16s ease,background-color .16s ease,box-shadow .16s ease}
+.btn{min-height:var(--tap);border-radius:var(--radius-sm);box-shadow:var(--shadow-soft)}
+.btn.primary{box-shadow:0 10px 26px rgba(88,139,102,.18)}
+.btn[disabled],button[disabled]{pointer-events:none}
+.reason,.lock-reason{font-size:8px!important;line-height:1.35;color:#9bad9e}
+.costs{gap:5px;flex-wrap:wrap}.cost{font-size:8px!important;line-height:1.15}
+.pill{font-size:9px!important;min-height:30px;display:inline-flex;align-items:center}
+
+/* readable microcopy: several station passes had 5.5–7px labels */
+.screen small,.modal small{font-size:clamp(8px,2.15vw,10px)}
+.panel p,.modal p,.dashboard-screen p{font-size:clamp(10px,2.65vw,12px);line-height:1.5}
+.panel [class*="meta"],.panel [class*="label"],.panel [class*="kicker"]{line-height:1.3}
+.exp-metrics small,.exp-result-stats small,.archive-command span,.archive-progress small,.archive-label,.archive-state small,.archive-entry-meta,.archive-radio article>div,.radio-archive-meta span,.radio-archive-meta time,.medical-vital-top span,.treatment-breakdown small,.treatment-preview span,.security-world small,.security-repair-preview span,.workbench-inventory small,.craft-output small,.generator-telemetry small,.sleep-preview-row span{font-size:8px!important}
+.exp-location-top span:first-child,.exp-ready span,.exp-ready small,.radio-story-state small,.radio-empty span,.medical-stock small,.medical-stock span,.medical-provider span,.security-status span,.security-level small,.security-scout span,.security-scout-state small,.workbench-status span,.workbench-scrap small,.workbench-scrap span{font-size:8px!important}
+
+/* dashboard hierarchy + scanability */
+.dashboard-screen{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.dashboard-topbar{min-height:70px;padding-top:10px;padding-bottom:18px}.dashboard-topbar .day{font-size:10px;letter-spacing:.13em}.dashboard-topbar .clock{font-size:28px;font-variant-numeric:tabular-nums}
+.condition-chip{border-radius:var(--radius-sm);box-shadow:inset 0 1px rgba(255,255,255,.025)}
+.bunker-strip{border-radius:var(--radius-sm);border-color:var(--edge);box-shadow:var(--shadow-soft)}
+.command-card{border-radius:var(--radius-lg);box-shadow:var(--shadow-deep);padding:17px}.command-card strong{font-size:clamp(19px,5.4vw,22px)}.command-card p{max-width:95%}.quest-log-link{min-height:42px}
+.dashboard-stats{gap:8px}.dashboard-stats .stat{min-height:82px;border-radius:var(--radius-sm);padding:11px}.stat-name i,.station .ico{font-family:ui-monospace,"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-variant-emoji:text}.stat-name i{font-size:14px}.dashboard-stats .stat-value{font-variant-numeric:tabular-nums}.stat-foot{gap:6px}.stat-foot span{font-size:8px!important}.stat-foot small{font-size:8px!important;text-align:right}
+.dashboard-stations{gap:8px}.dashboard-stations .station{min-height:108px;border-radius:var(--radius-md);border-color:var(--edge);box-shadow:var(--shadow-soft)}.dashboard-stations .station:not(.locked):active{border-color:var(--edge-strong)}.station .ico{font-size:21px}.station-copy small{font-size:9px!important;line-height:1.25}.station .badge{font-size:8px;padding:3px 7px}.dashboard-stations .station.locked{opacity:.58}.dashboard-stations .station.locked .ico,.dashboard-stations .station.locked .station-copy{opacity:.62}.dashboard-stations .station.active-objective{box-shadow:inset 0 0 0 1px rgba(143,208,157,.22),0 0 24px rgba(88,139,102,.10)}
+.survivor-dashboard .survivor{min-height:62px}.survivor b{font-size:13px}.survivor small{line-height:1.25}.trust{font-variant-numeric:tabular-nums}
+.objective{min-height:38px}.objective .dot{flex:0 0 20px;width:20px;height:20px}.daily-reward{font-size:8px}.daily-reward b{font-size:9px}
+.log-card .log{font-size:10px;line-height:1.5}.version{font-size:9px;line-height:1.4;margin-top:22px;padding-bottom:2px}
+
+/* full-panel consistency */
+.resource-row{margin:2px 0 4px;gap:6px;scroll-snap-type:x proximity}.resource-row>*{scroll-snap-align:start}
+.action-list{gap:10px}.action{border-radius:var(--radius-md);border-color:var(--edge);box-shadow:var(--shadow-soft)}
+.generator-status,.workbench-status,.security-status,.medical-diagnostic,.sleep-status,.exp-command,.radio-console,.archive-command,.questlog-command{border-radius:var(--radius-md)!important;box-shadow:var(--shadow-soft)!important}
+.generator-telemetry,.workbench-inventory,.security-world,.medical-vitals,.sleep-preview,.exp-readiness,.archive-state{gap:7px!important}
+.generator-refuel,.workbench-craft,.security-action,.medical-treatment,.sleep-confirm{min-height:56px;border-radius:var(--radius-md)!important}
+.upgrade-grid{gap:8px}.upgrade-grid .action{min-height:116px}
+
+/* expedition: keep information dense but phone-readable */
+.expedition-panel{padding-bottom:calc(38px + env(safe-area-inset-bottom))}.exp-location-list{gap:10px}.exp-location{border-radius:var(--radius-md);padding:14px 13px;box-shadow:var(--shadow-soft)}.exp-location-top b{font-size:13px}.exp-location>p{font-size:10px;line-height:1.42}.exp-metrics{gap:6px}.exp-metrics>div,.exp-result-stats>div{min-height:46px;padding:8px 6px}.exp-metrics b,.exp-result-stats b{font-size:10px}.exp-ready{min-height:54px}.exp-ready b{font-size:13px}.exp-result{border-radius:var(--radius-md);box-shadow:var(--shadow-deep)}
+
+/* modal / narrative / emergency unification */
+.modal-wrap{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));padding-bottom:calc(14px + env(safe-area-inset-bottom));background:rgba(0,0,0,.80);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.modal{width:min(100%,500px);max-height:min(86dvh,760px);border-radius:var(--radius-xl);padding:18px 17px calc(18px + env(safe-area-inset-bottom));box-shadow:0 32px 110px #000,inset 0 1px rgba(255,255,255,.04);overscroll-behavior:contain}
+.modal h2{font-size:clamp(19px,5.4vw,24px);line-height:1.12}.modal .story-tag{font-size:9px;line-height:1.3}.modal-meta{font-size:8px;line-height:1.35;padding:9px 10px}.modal .choice{gap:9px;margin-top:16px}.modal .choice .btn{min-height:58px;padding:13px 14px}.modal .choice .btn small{font-size:9px;line-height:1.35;margin-top:5px}
+.gameover-modal h2{font-size:clamp(25px,7vw,31px)}
+.toast{bottom:calc(18px + env(safe-area-inset-bottom));min-height:38px;display:flex;align-items:center;justify-content:center;padding:9px 14px;font-size:10px;line-height:1.25;border-radius:999px}
+
+/* menu/prologue final consistency */
+.menu-frame{border-color:rgba(143,208,157,.07)}.menu .logo{font-size:clamp(54px,16vw,68px)}.menu .tagline{font-size:13px;line-height:1.48}.menu .btn{min-height:56px}.menu-util{min-height:46px}.menu-util span{font-size:8px}.save-dossier{border-radius:var(--radius-md);box-shadow:var(--shadow-soft)}
+.prologue-copy{max-width:440px}.prologue h1{font-size:clamp(30px,9vw,40px);line-height:1.02}.prologue p{font-size:clamp(13px,3.8vw,16px);line-height:1.58}.prologue-next{min-height:54px}
+
+/* compact phones without sacrificing legibility */
+@media(max-width:360px){
+ .screen{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+ .dashboard-screen{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+ .dashboard-topbar{gap:6px}.condition-chip{display:none}.dashboard-stats{gap:6px}.dashboard-stats .stat{padding:9px;min-height:78px}.stat-foot small{display:none}.dashboard-stations{gap:6px}.dashboard-stations .station{min-height:101px;padding:10px}
+ .exp-readiness{grid-template-columns:repeat(5,minmax(0,1fr))}.exp-ready{padding:7px 3px}.exp-ready span,.exp-ready small{font-size:7px!important}.exp-ready b{font-size:11px}
+ .modal{padding-left:14px;padding-right:14px}
+}
+@media(max-width:330px){.menu-utils{grid-template-columns:1fr 1fr}.menu-utils>.menu-util:nth-child(3),.menu-utils>.menu-util:nth-child(4){grid-column:auto}.save-grid{grid-template-columns:1fr 1fr}.dashboard-stats{grid-template-columns:1fr 1fr}}
+
+/* larger phones / tablets: keep the portrait game column controlled */
+@media(min-width:521px){.screen:not(.menu):not(.prologue){border-left:1px solid rgba(143,208,157,.05);border-right:1px solid rgba(143,208,157,.05)}}
+
+/* motion is restrained and optional */
+@media(prefers-reduced-motion:no-preference){
+ .modal{animation:uiSheetIn .18s cubic-bezier(.2,.8,.2,1)}
+ .menu-inner,.prologue-copy{animation:uiFadeUp .28s ease both}
+ .dashboard-stations .station.active-objective{animation:objectiveGlow 2.4s ease-in-out infinite}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+@keyframes uiSheetIn{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes uiFadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes objectiveGlow{0%,100%{box-shadow:inset 0 0 0 1px rgba(143,208,157,.18),0 0 12px rgba(88,139,102,.06)}50%{box-shadow:inset 0 0 0 1px rgba(143,208,157,.28),0 0 24px rgba(88,139,102,.13)}}
