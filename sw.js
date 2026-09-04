@@ -1,6 +1,6 @@
-const CACHE='lockdown-pwa-v19-global-ui-polish';
+const CACHE='lockdown-pwa-v19-1-final-ui-polish';
 const CORE=[
- './','./index.html','./app.css?v=0.19','./app.js?v=0.19','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0.19.1','./app.js?v=0.19.1','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',

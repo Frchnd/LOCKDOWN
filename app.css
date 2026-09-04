@@ -331,3 +331,103 @@ button:not(:disabled):active{transform:translateY(1px) scale(.995);filter:bright
 @keyframes uiSheetIn{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes uiFadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 @keyframes objectiveGlow{0%,100%{box-shadow:inset 0 0 0 1px rgba(143,208,157,.18),0 0 12px rgba(88,139,102,.06)}50%{box-shadow:inset 0 0 0 1px rgba(143,208,157,.28),0 0 24px rgba(88,139,102,.13)}}
+
+/* v0.19.1 — Final UI/UX audit pass */
+:root{--panel-head-h:64px;--section-gap:12px}
+html{scroll-padding-top:calc(var(--panel-head-h) + 14px)}
+body{min-width:0}
+.screen{width:100%;overflow-x:hidden}
+.panel-head{height:auto;min-height:var(--panel-head-h);gap:11px;align-items:center}
+.panel-head .grow{min-width:0}
+.panel-head h1,.panel-head h2{font-size:clamp(18px,5vw,21px);line-height:1.05;margin:0 0 3px}
+.panel-head .grow>span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px!important;line-height:1.2;letter-spacing:.075em;color:#74877a}
+.panel-head>small{flex:0 0 auto;font-size:8.5px!important;white-space:nowrap;color:#718377}
+.system-btn{font-size:23px;line-height:1;letter-spacing:1px}
+
+/* predictable vertical rhythm */
+.card,.generator-status,.generator-meter,.generator-tech,.workbench-status,.workbench-inventory,.medical-diagnostic,.medical-vitals,.medical-provider,.sleep-status,.sleep-body-state,.sleep-efficiency,.sleep-control,.sleep-preview,.security-status,.security-integrity,.security-scout,.security-world,.radio-console,.radio-story-state,.exp-command,.exp-readiness,.exp-scout,.questlog-command,.archive-command,.archive-state,.relation-snapshot,.upkeep-card{margin-bottom:var(--section-gap)}
+.section-head{margin-top:22px;margin-bottom:9px}
+.section-head:first-child{margin-top:12px}
+.action-list,.warehouse-grid,.radio-actions,.exp-location-list,.questlog-stack,.archive-timeline,.archive-radio{gap:10px}
+
+/* minimum readable microcopy on phone */
+.menu-topline,.chapter-mark,.menu .eyebrow,.dossier-kicker,.condition,.save-grid small,.dossier-quest span,.dossier-foot,.menu-util span,.menu-util small,
+.quest-kicker,.quest-footer,.station .badge,.lock-reason,.reason,.cost,.daily-reward,.survivor-dashboard .grow em,
+.radio-archive-meta span,.radio-archive-meta time,.radio-story-state small,.medical-vital-top span,.treatment-breakdown small,.treatment-preview span,
+.security-world small,.security-repair-preview span,.workbench-inventory small,.craft-output small,.generator-telemetry small,.sleep-preview-row span,
+.exp-metrics small,.exp-result-stats small,.archive-entry-meta,.archive-radio article>div,.archive-state small,.archive-label,.questlog-meta,.questlog-meta b,.questlog-reward span{font-size:8.5px!important}
+.station-copy small,.survivor small,.archive-entry p,.archive-radio article p,.questlog-card p,.questlog-empty,.relation-snapshot p,.upkeep-card p{font-size:9.5px!important;line-height:1.45}
+.survivor-dashboard .survivor b{font-size:13px}.survivor-dashboard .trust{font-size:12px}.survivor-dashboard .grow em{line-height:1.35}
+.log-card .log{font-size:10px!important}
+
+/* tabs for screens that become unwieldy when everything is stacked */
+.panel-tabs{position:sticky;top:var(--panel-head-h);z-index:5;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px;margin:4px 0 14px;padding:5px;border:1px solid rgba(143,208,157,.18);border-radius:13px;background:rgba(8,18,12,.94);box-shadow:0 9px 24px rgba(0,0,0,.22);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.panel-tab{min-height:40px;min-width:0;padding:7px 7px;border:1px solid transparent;border-radius:9px;background:transparent;color:#809386;display:flex;align-items:center;justify-content:center;gap:6px;font-size:8.5px;font-weight:900;letter-spacing:.08em;white-space:nowrap}
+.panel-tab b{min-width:18px;padding:2px 5px;border-radius:999px;background:#13251a;color:#8ba392;font-size:8px;font-variant-numeric:tabular-nums}
+.panel-tab.active{background:#193023;border-color:#52725c;color:#dce8df;box-shadow:inset 0 1px rgba(255,255,255,.04)}
+.panel-tab.active b{background:#2a4935;color:#a9dfb5}
+.tab-content{min-height:90px}
+.quest-tab-content,.archive-tab-content{padding-bottom:2px}
+.archive-replay{margin-top:12px}
+
+/* long-screen ergonomics */
+.expedition-panel .panel-tabs{margin-top:14px}
+.exp-location{scroll-margin-top:calc(var(--panel-head-h) + 60px)}
+.exp-location-list{display:grid}
+.exp-location-top>div{min-width:0}.exp-location-top b{overflow-wrap:anywhere}
+.exp-metrics>div,.exp-result-stats>div{min-width:0}
+.exp-metrics b,.exp-result-stats b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.exp-location .btn{min-height:48px}
+.workbench-craft-grid{gap:10px}
+.upgrade-grid{gap:10px}
+.questlog-card{min-height:92px}
+.questlog-card.completed{min-height:auto}
+.archive-state>div{min-height:58px;display:flex;flex-direction:column;justify-content:center}
+
+/* warehouse / sleep / security / generator cards stay aligned at narrow widths */
+.warehouse-body-state,.sleep-body-state,.security-world,.generator-telemetry,.treatment-breakdown,.treatment-preview,.workbench-inventory{align-items:stretch}
+.warehouse-body-state>div,.sleep-body-state>div,.security-world>div,.generator-telemetry>div,.treatment-breakdown>div,.treatment-preview>div,.workbench-inventory>div{min-width:0}
+.warehouse-preview-row b,.sleep-preview-row b,.security-repair-preview b,.generator-refill-preview b{font-variant-numeric:tabular-nums}
+
+/* menu readability while preserving disabled semantics */
+.menu .btn[disabled]{opacity:.48;filter:saturate(.35)}
+.menu-inner{padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+.menu-utils{gap:7px}.menu-util{min-height:48px;padding:9px 8px}
+.menu-util span{line-height:1.2}.menu-util small{line-height:1.25}
+
+/* Settings should talk to the player, not expose implementation details */
+.settings-note{font-size:10px!important;line-height:1.55;padding:2px 3px 14px;color:#899b8e}
+.setting-range{padding:14px 0}.setting-range>span{font-size:12px}.setting-range b{font-size:11px}
+.setting-range input{height:30px;margin-top:9px}
+.setting-card .objective{min-height:44px}
+
+/* modal geometry: no cramped edges, no accidental horizontal overflow */
+.modal{overflow-x:hidden}.modal .choice .btn{width:100%}.modal-meta{overflow-wrap:anywhere}.modal p{overflow-wrap:anywhere}
+
+@media(max-width:380px){
+ :root{--panel-head-h:62px}
+ .panel-head{gap:8px}.panel-head .grow>span{font-size:8px!important}.panel-head>small{font-size:8px!important}
+ .panel-tabs{gap:4px;padding:4px}.panel-tab{min-height:39px;padding:6px 5px;font-size:8px}.panel-tab b{font-size:7.5px}
+ .menu-inner{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+ .station-copy small{font-size:9px!important}
+ .exp-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.exp-result-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .archive-state{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:340px){
+ .panel-head .grow>span{max-width:190px}.panel-tabs{overflow-x:auto;grid-auto-columns:minmax(92px,1fr);justify-content:start}.panel-tab{padding-left:8px;padding-right:8px}
+ .treatment-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}.security-world,.generator-telemetry{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* final narrow-screen + settings control cleanup */
+.menu .logo{font-size:clamp(48px,13.8vw,60px)!important;letter-spacing:-.055em!important;white-space:nowrap;max-width:100%}
+.menu .logo:after{right:0;bottom:3px}
+.setting-card input[type="checkbox"]{-webkit-appearance:none;appearance:none;width:46px;height:26px;margin:0;border:1px solid #3f5b49;border-radius:999px;background:#0a1510;position:relative;vertical-align:middle;transition:background .16s ease,border-color .16s ease;cursor:pointer}
+.setting-card input[type="checkbox"]:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#73877a;box-shadow:0 2px 7px rgba(0,0,0,.35);transition:transform .16s ease,background .16s ease}
+.setting-card input[type="checkbox"]:checked{background:#214631;border-color:#6d9c79}
+.setting-card input[type="checkbox"]:checked:before{transform:translateX(20px);background:#9addaa}
+.setting-range input[type="range"]{-webkit-appearance:none;appearance:none;background:transparent;height:30px}
+.setting-range input[type="range"]::-webkit-slider-runnable-track{height:5px;border-radius:999px;background:#263b30;border:1px solid #3c5747}
+.setting-range input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#9addaa;border:2px solid #163022;margin-top:-8px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.setting-range input[type="range"]::-moz-range-track{height:5px;border-radius:999px;background:#263b30;border:1px solid #3c5747}
+.setting-range input[type="range"]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#9addaa;border:2px solid #163022;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.panel-tab{min-height:44px}
