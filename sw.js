@@ -1,6 +1,6 @@
-const CACHE='lockdown-v19-2';
+const CACHE='lockdown-v19-3';
 const CORE=[
- './','./index.html','./app.css?v=0192','./app.js?v=0192','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0193','./app.js?v=0193','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',
@@ -8,7 +8,11 @@ const CORE=[
  './assets/prologue/prologue_04_bunker.webp',
  './assets/prologue/prologue_05_door.webp',
  './assets/prologue/prologue_06_generator.webp',
- './assets/prologue/prologue_07_command.webp'
+ './assets/prologue/prologue_07_command.webp',
+ './assets/visual/menu-hd.webp','./assets/visual/lockdown-logo.webp',
+ './assets/visual/maya.webp','./assets/visual/raka.webp',
+ './assets/visual/radio.webp','./assets/visual/medis.webp','./assets/visual/gudang.webp',
+ './assets/visual/security.webp','./assets/visual/generator.webp','./assets/visual/workbench.webp','./assets/visual/expedition.webp'
 ];
 const AUDIO=[
  './assets/audio/Radio Static SFX.wav',
@@ -24,7 +28,7 @@ self.addEventListener('install',e=>e.waitUntil(
 ));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
  const keys=await caches.keys();
- const hadOld=keys.some(k=>k.startsWith('lockdown-pwa-')&&k!==CACHE);
+ const hadOld=keys.some(k=>k.startsWith('lockdown-')&&k!==CACHE);
  await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
  await self.clients.claim();
  if(hadOld){

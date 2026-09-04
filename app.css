@@ -569,3 +569,123 @@ button,.btn,.action{min-height:var(--ui-control)}
   .exp-locked-row{align-items:flex-start;flex-direction:column;gap:5px}
   .exp-locked-row small{max-width:none;text-align:left}
 }
+
+/* =========================================================
+   v0.19.3 — VISUAL ASSET INTEGRATION
+   Fixed cinematic imagery, HD portrait menu, NPC portraits.
+   ========================================================= */
+
+/* Main Menu: use a real portrait asset instead of stretching the old low-res image. */
+.menu{
+  background:#020403 url('assets/visual/menu-hd.webp') 50% 46%/cover no-repeat !important;
+  background-attachment:scroll !important;
+}
+.menu-atmosphere{
+  background:
+    linear-gradient(180deg,rgba(1,3,2,.20) 0%,rgba(1,3,2,.08) 28%,rgba(2,7,4,.66) 57%,#030805 84%,#030805 100%),
+    radial-gradient(ellipse at 50% 28%,transparent 0 24%,rgba(0,0,0,.18) 58%,rgba(0,0,0,.62) 100%) !important;
+}
+.brand-block{max-width:100%}
+.menu-logo-img{
+  display:block;
+  width:min(100%,430px);
+  height:auto;
+  margin:10px 0 4px;
+  filter:drop-shadow(0 7px 20px rgba(0,0,0,.82));
+}
+.credits-logo-img{display:block;width:min(100%,360px);height:auto;margin:0 auto 12px;filter:drop-shadow(0 6px 18px #000)}
+/* Old text logo remains unsupported as primary branding from this build onward. */
+.menu .logo,.credits-logo{display:none!important}
+
+/* Cinematic station visual: image never carries mechanical text. */
+.panel-visual{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/7;
+  min-height:150px;
+  max-height:205px;
+  overflow:hidden;
+  margin:2px 0 16px;
+  border:1px solid rgba(143,208,157,.16);
+  border-radius:16px;
+  background:#08100c;
+  box-shadow:0 14px 30px rgba(0,0,0,.24);
+}
+.panel-visual>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.panel-visual-shade{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(3,7,5,.08) 0%,rgba(3,7,5,.03) 38%,rgba(4,10,7,.62) 100%),linear-gradient(90deg,rgba(0,0,0,.12),transparent 60%);
+}
+.panel-visual:after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.018),inset 0 -30px 50px rgba(0,0,0,.12)}
+.panel-visual-caption{position:absolute;left:14px;right:14px;bottom:12px;z-index:2;text-shadow:0 2px 8px #000}
+.panel-visual-caption span{display:block;font-size:8px;font-weight:900;letter-spacing:.14em;color:#98b6a0}
+.panel-visual-caption b{display:block;margin-top:2px;font-size:18px;line-height:1;color:#edf5ef}
+
+/* NPC screen gets a taller portrait crop but remains a visual header, not a second info card. */
+.panel-visual.npc-visual{aspect-ratio:16/9;max-height:250px;min-height:190px}
+.panel-visual.npc-visual>img{object-position:center 23%}
+
+/* Real character portraits replace letter placeholders. */
+.avatar.portrait{overflow:hidden;padding:0;background:#0a120d;border:1px solid rgba(143,208,157,.22);box-shadow:0 6px 14px rgba(0,0,0,.2)}
+.avatar.portrait img{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block}
+.avatar.portrait.large{width:62px;height:62px;border-radius:15px}
+.survivor-dashboard .avatar.portrait{width:46px;height:46px;flex:0 0 46px}
+.generator-tech .avatar.portrait,.medical-provider .avatar.portrait{width:48px;height:48px;flex:0 0 48px}
+
+/* Arrival/contact modal can carry a fixed NPC portrait without pushing controls below the fold. */
+.modal-visual{
+  height:170px;
+  margin:-16px -16px 14px;
+  overflow:hidden;
+  border-radius:21px 21px 0 0;
+  position:relative;
+  background:#070d09;
+}
+.modal-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 36%,rgba(20,33,25,.94) 100%)}
+.modal-visual img{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block}
+
+/* Give a few high-value scene cards a fixed image surface while keeping text on solid layers. */
+.radio-console,.medical-diagnostic,.warehouse-status,.security-status,.generator-status,.workbench-status,.exp-command{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+/* Do not put imagery directly behind small text. A slight translucent fill keeps contrast stable. */
+.panel-visual + .radio-console,
+.panel-visual + .medical-vitals,
+.panel-visual + .warehouse-status,
+.panel-visual + .security-status,
+.panel-visual + .generator-status,
+.panel-visual + .workbench-status,
+.panel-visual + .exp-result,
+.panel-visual + .exp-command{margin-top:0}
+
+/* Dashboard survivor rows now feel like character entries rather than generic app rows. */
+.survivor-dashboard .survivor{background:linear-gradient(90deg,rgba(18,31,23,.98),rgba(11,21,15,.96));border-color:#314b3a}
+
+/* Responsive image treatment. */
+@media(max-width:380px){
+  .menu{background-position:50% 44%!important}
+  .menu-logo-img{width:min(100%,390px)}
+  .panel-visual{min-height:138px;margin-bottom:14px;border-radius:14px}
+  .panel-visual.npc-visual{min-height:176px}
+  .modal-visual{height:150px}
+}
+@media(max-width:330px){
+  .panel-visual{min-height:128px}
+  .panel-visual.npc-visual{min-height:160px}
+  .avatar.portrait.large{width:56px;height:56px}
+}
+
+/* Dashboard station cards use restrained fixed imagery as context, not decoration overload. */
+.station[class*="station-"]{background-position:center;background-size:cover;background-repeat:no-repeat;position:relative;overflow:hidden}
+.station[class*="station-"]>*{position:relative;z-index:1}
+.station-radio{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/radio.webp')!important}
+.station-medis{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/medis.webp')!important}
+.station-gudang{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/gudang.webp')!important}
+.station-kasur{background-image:linear-gradient(135deg,rgba(7,16,11,.90),rgba(7,16,11,.76)),url('assets/visual/menu-hd.webp')!important}
+.station-security{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/security.webp')!important}
+.station-generator{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/generator.webp')!important}
+.station-workbench{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/workbench.webp')!important}
+.station-expedition{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/expedition.webp')!important}
+.station.active-objective{box-shadow:0 0 0 1px rgba(143,208,157,.36),0 10px 24px rgba(0,0,0,.22)}
