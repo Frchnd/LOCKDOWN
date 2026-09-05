@@ -689,3 +689,63 @@ button,.btn,.action{min-height:var(--ui-control)}
 .station-workbench{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/workbench.webp')!important}
 .station-expedition{background-image:linear-gradient(135deg,rgba(7,16,11,.88),rgba(7,16,11,.72)),url('assets/visual/expedition.webp')!important}
 .station.active-objective{box-shadow:0 0 0 1px rgba(143,208,157,.36),0 10px 24px rgba(0,0,0,.22)}
+
+
+/* =========================================================
+   v0.19.4 — UI COHERENCE PASS
+   Compact dashboard + industrial station emblem system +
+   unified controls + in-game confirmation sheets.
+   ========================================================= */
+:root{
+ --co-gap:10px;
+ --co-control:50px;
+ --co-card:#111d16;
+ --co-card-2:#17251c;
+ --co-edge:#304737;
+ --co-edge-hot:#6f9e79;
+}
+
+/* One emblem family for every physical bunker station. */
+.station-emblem{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border:1px solid rgba(143,208,157,.34);clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%);background:linear-gradient(145deg,rgba(24,42,31,.96),rgba(7,16,11,.92));color:#b7dec0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 6px 18px rgba(0,0,0,.22)}
+.station-emblem svg{width:22px;height:22px;display:block}
+.panel-station-emblem{width:36px;height:36px;flex-basis:36px;margin-left:1px}
+.panel-station-emblem svg{width:20px;height:20px}
+.station.locked .station-emblem{filter:grayscale(1);opacity:.55}
+.station.active-objective .station-emblem{color:#e2f6e6;border-color:#8fd09d;box-shadow:0 0 18px rgba(143,208,157,.19),inset 0 0 0 1px rgba(255,255,255,.04)}
+
+/* Dashboard: command first, status compact, stations compact, secondary data folded. */
+.dashboard-screen{padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+.dashboard-screen .command-card{margin-bottom:14px}
+.compact-head{margin-top:14px!important;margin-bottom:7px!important;min-height:22px}
+.compact-head h3{font-size:11px;letter-spacing:.13em}
+.compact-head span{font-size:8.5px!important;letter-spacing:.07em}
+.status-console{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:7px;border:1px solid #263a2d;border-radius:12px;background:rgba(10,20,14,.88);box-shadow:0 8px 24px rgba(0,0,0,.16);margin-bottom:10px}
+.status-line{display:grid;grid-template-columns:minmax(58px,.85fr) minmax(34px,1fr) 28px;align-items:center;gap:6px;min-height:38px;padding:6px 7px;border:1px solid rgba(75,105,82,.34);border-radius:8px;background:rgba(19,33,24,.76)}
+.status-label{min-width:0;display:flex;flex-direction:column;gap:1px}.status-label span{font-size:9px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status-label small{font-size:6.8px!important;letter-spacing:.08em;opacity:.62;line-height:1.1}
+.status-line>b{font-size:12px;font-variant-numeric:tabular-nums;text-align:right}.status-mini-bar{height:3px;border-radius:999px;background:#27372d;overflow:hidden}.status-mini-bar i{display:block;height:100%;background:#8fd09d}.status-line.warn .status-mini-bar i{background:#d0aa6c}.status-line.danger .status-mini-bar i{background:#d76e64}
+.compact-stations{gap:7px!important}.compact-stations .station{min-height:88px!important;padding:9px 10px!important;border-radius:11px!important}.compact-stations .station-top{align-items:center}.compact-stations .station-copy{margin-top:7px}.compact-stations .station-copy b{font-size:12px;line-height:1.15}.compact-stations .station-copy small{font-size:8px!important}.compact-stations .badge{font-size:7px!important;padding:2px 6px!important}.compact-stations .lock-reason{font-size:7px!important;line-height:1.2;margin-top:4px}
+.compact-survivors{padding:3px 8px!important}.compact-survivors .survivor{min-height:54px!important;padding:5px 0!important}.compact-survivors .avatar.portrait{width:40px;height:40px;flex-basis:40px}
+.dashboard-fold{margin-top:9px;border:1px solid #263a2d;border-radius:10px;background:rgba(15,28,20,.82);overflow:hidden}.dashboard-fold summary{list-style:none;cursor:pointer;min-height:50px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:10px}.dashboard-fold summary::-webkit-details-marker{display:none}.dashboard-fold summary>div:first-child{min-width:0;display:flex;flex-direction:column;gap:3px}.dashboard-fold summary span{font-size:8px;letter-spacing:.13em;color:#8fd09d;font-weight:800}.dashboard-fold summary b{font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:310px;color:#dbe9de}.fold-body{padding:0 11px 11px;border-top:1px solid rgba(78,111,87,.25)}.fold-dots{display:flex;gap:4px}.fold-dots i{width:7px;height:7px;border-radius:50%;background:#31443a}.fold-dots i.done{background:#8fd09d}.fold-count{display:grid;place-items:center;min-width:23px;height:23px;border:1px solid #3a5442;border-radius:7px;color:#d8e7db!important}.activity-fold summary b{max-width:270px}.dashboard-fold .objective{min-height:34px}.dashboard-fold .daily-progress{margin-top:10px}.dashboard-fold .log{padding:8px 0;font-size:9px}.dashboard-fold .log time{font-size:7px}
+
+/* Unified game control language. Custom actions inherit one industrial shape. */
+.btn,.action,.generator-refuel,.medical-treatment,.security-action,.workbench-craft,.upgrade-card,.warehouse-use,.sleep-confirm,.quest-log-link,.menu-util,.time-btn,.icon-btn,.back{
+ border-radius:8px!important;border:1px solid #38513f!important;background:linear-gradient(180deg,#1a2b20,#111d16)!important;color:#eef5ef;box-shadow:inset 0 1px rgba(255,255,255,.035),0 7px 18px rgba(0,0,0,.18);font-weight:800;letter-spacing:.045em
+}
+.btn,.action,.generator-refuel,.medical-treatment,.security-action,.workbench-craft,.warehouse-use,.sleep-confirm{min-height:var(--co-control)}
+.btn:hover,.action:hover,.generator-refuel:hover,.medical-treatment:hover,.security-action:hover,.workbench-craft:hover,.warehouse-use:hover{border-color:#52725b!important}
+.btn:active,.action:active,.generator-refuel:active,.medical-treatment:active,.security-action:active,.workbench-craft:active,.warehouse-use:active,.menu-util:active,.time-btn:active,.icon-btn:active{transform:translateY(1px) scale(.995)}
+.btn.primary,.prologue-next,.continue-btn{background:linear-gradient(180deg,#79ad84,#527a5d)!important;border-color:#9dd6a8!important;color:#07100b!important;box-shadow:0 9px 25px rgba(82,130,94,.21)!important}
+.btn.danger,.danger.btn{background:linear-gradient(180deg,#6c302c,#431f1d)!important;border-color:#9f5049!important;color:#fff2f0!important}.btn.ghost{background:rgba(14,25,18,.76)!important;color:#b9c9bd!important;border-color:#304338!important}
+.btn[disabled],button[disabled]{filter:saturate(.38);opacity:.47!important;box-shadow:none!important}
+.btn small{display:block;font-weight:600;letter-spacing:.02em;opacity:.72}
+.menu-util{background:rgba(12,23,16,.82)!important}.time-btn,.icon-btn,.back{background:#142119!important}
+
+/* Confirmation UI is a bunker system sheet, never a browser notification. */
+.confirm-wrap{background:rgba(0,0,0,.86)!important}.confirm-modal{border:1px solid #516e59!important;background:linear-gradient(180deg,#17261d 0%,#0c1710 100%)!important;box-shadow:0 34px 120px #000,inset 0 1px rgba(255,255,255,.04)!important}.confirm-modal:before{content:"LOCKDOWN SYSTEM";display:block;margin:-18px -17px 16px;padding:9px 17px;border-bottom:1px solid #30483a;background:linear-gradient(90deg,rgba(143,208,157,.12),transparent);font-size:7px;letter-spacing:.2em;color:#88ad90}.confirm-modal h2{margin-top:6px}.confirm-modal .modal-meta{border-color:#3b5443;background:#111f17;color:#b7c9bb}.confirm-modal .choice{display:grid;grid-template-columns:1fr 1fr}.confirm-modal .choice .btn{min-height:62px}
+
+@media(max-width:380px){
+ .status-console{gap:5px;padding:6px}.status-line{grid-template-columns:minmax(52px,.9fr) minmax(28px,1fr) 25px;gap:5px;padding:5px 6px}.status-label span{font-size:8.3px}.status-label small{font-size:6.2px!important}.status-line>b{font-size:11px}
+ .compact-stations .station{min-height:83px!important;padding:8px 9px!important}.station-emblem{width:34px;height:34px;flex-basis:34px}.station-emblem svg{width:19px;height:19px}
+ .dashboard-fold summary b{max-width:240px}.confirm-modal .choice{grid-template-columns:1fr}
+}
+@media(max-width:340px){.status-console{grid-template-columns:1fr}.status-line{grid-template-columns:72px 1fr 28px}.dashboard-fold summary b{max-width:205px}}
