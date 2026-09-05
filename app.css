@@ -749,3 +749,341 @@ button,.btn,.action{min-height:var(--ui-control)}
  .dashboard-fold summary b{max-width:240px}.confirm-modal .choice{grid-template-columns:1fr}
 }
 @media(max-width:340px){.status-console{grid-template-columns:1fr}.status-line{grid-template-columns:72px 1fr 28px}.dashboard-fold summary b{max-width:205px}}
+
+
+/* =========================================================
+   v0.19.5 — LAYOUT + SURVIVOR PRESENTATION POLISH
+   Alignment discipline, equal card rhythm, survivor roster
+   capacity, and cleaner dashboard text spacing.
+   ========================================================= */
+.dashboard-screen{
+  --dash-gap:12px;
+}
+.dashboard-screen .compact-head{
+  margin:18px 6px 8px!important;
+  min-height:22px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+}
+.dashboard-screen .compact-head h3{
+  margin:0!important;
+  font-size:13px!important;
+  line-height:1!important;
+  letter-spacing:.12em!important;
+}
+.dashboard-screen .compact-head>span{
+  margin:0!important;
+  min-width:0;
+  font-size:8.5px!important;
+  line-height:1.15!important;
+  letter-spacing:.08em!important;
+  text-align:right;
+  opacity:.72;
+}
+
+/* Status: equal geometry and baseline alignment on every cell. */
+.status-console{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+  padding:10px!important;
+  border-radius:14px!important;
+}
+.status-line{
+  min-width:0!important;
+  min-height:60px!important;
+  display:grid!important;
+  grid-template-columns:minmax(76px,1fr) minmax(54px,84px) 32px!important;
+  align-items:center!important;
+  gap:9px!important;
+  padding:9px 10px!important;
+  border-radius:10px!important;
+}
+.status-label{
+  min-width:0;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  gap:3px!important;
+}
+.status-label span{
+  font-size:12.5px!important;
+  line-height:1.05!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.status-label small{
+  margin:0!important;
+  font-size:7.4px!important;
+  line-height:1!important;
+  letter-spacing:.09em!important;
+}
+.status-mini-bar{
+  width:100%!important;
+  min-width:0!important;
+  height:4px!important;
+}
+.status-line>b{
+  width:32px;
+  margin:0!important;
+  font-size:15px!important;
+  line-height:1!important;
+  text-align:right!important;
+}
+
+/* Station cards: identical internal rhythm and no floating text. */
+.compact-stations{
+  gap:10px!important;
+}
+.compact-stations .station{
+  min-height:116px!important;
+  padding:11px 12px!important;
+  border-radius:13px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  text-align:left!important;
+}
+.compact-stations .station-top{
+  width:100%;
+  min-height:39px;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+}
+.compact-stations .station-emblem{
+  width:38px!important;
+  height:38px!important;
+  flex-basis:38px!important;
+}
+.compact-stations .station-copy{
+  width:100%;
+  min-height:39px;
+  margin-top:10px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-end!important;
+  gap:4px!important;
+}
+.compact-stations .station-copy b{
+  margin:0!important;
+  font-size:13.5px!important;
+  line-height:1.1!important;
+  letter-spacing:-.01em;
+}
+.compact-stations .station-copy small{
+  margin:0!important;
+  min-height:12px;
+  font-size:8.8px!important;
+  line-height:1.2!important;
+}
+.compact-stations .badge{
+  margin:0!important;
+  min-width:38px;
+  height:22px;
+  display:grid!important;
+  place-items:center!important;
+  padding:0 7px!important;
+  font-size:7.5px!important;
+  line-height:1!important;
+}
+.compact-stations .lock-reason{
+  margin-top:7px!important;
+  padding-top:6px!important;
+  font-size:7.3px!important;
+  line-height:1.25!important;
+}
+
+/* Survivor: portrait belongs here; text/trust use fixed columns and baselines. */
+.compact-survivors{
+  padding:7px 10px 0!important;
+  overflow:hidden;
+}
+.compact-survivors .survivor{
+  width:100%;
+  min-height:70px!important;
+  padding:8px 2px!important;
+  display:grid!important;
+  grid-template-columns:52px minmax(0,1fr) 64px!important;
+  align-items:center!important;
+  gap:12px!important;
+}
+.compact-survivors .avatar.portrait{
+  width:52px!important;
+  height:52px!important;
+  flex-basis:52px!important;
+  border-radius:10px!important;
+}
+.survivor-copy{
+  min-width:0;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  gap:4px!important;
+  text-align:left!important;
+}
+.survivor-copy b{
+  margin:0!important;
+  font-size:15px!important;
+  line-height:1.05!important;
+}
+.survivor-copy small{
+  margin:0!important;
+  max-width:100%;
+  font-size:9px!important;
+  line-height:1.25!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.compact-survivors .trust{
+  width:64px;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  gap:3px!important;
+  text-align:right!important;
+}
+.compact-survivors .trust small{
+  margin:0!important;
+  font-size:7.2px!important;
+  line-height:1!important;
+  letter-spacing:.09em!important;
+}
+.compact-survivors .trust>b{
+  margin:0!important;
+  font-size:18px!important;
+  line-height:1!important;
+  color:#9ee0ac;
+}
+.survivor-roster-meta{
+  min-height:36px;
+  margin:0 -2px;
+  padding:9px 4px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border-top:1px solid rgba(79,108,87,.28);
+}
+.survivor-roster-meta span{
+  font-size:7.4px;
+  letter-spacing:.12em;
+  color:#809487;
+}
+.survivor-roster-meta b{
+  font-size:8px;
+  letter-spacing:.06em;
+  color:#aebfb2;
+}
+
+/* Survivor panel: capacity is visible without inventing extra characters. */
+.survivor-capacity-panel{
+  margin-top:10px;
+  padding:11px 12px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:12px;
+  border:1px solid rgba(74,105,83,.42);
+  border-radius:10px;
+  background:rgba(13,25,18,.78);
+}
+.survivor-capacity-panel>div:first-child{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.survivor-capacity-panel span,
+.survivor-capacity-panel small{
+  font-size:7.5px;
+  letter-spacing:.1em;
+  color:#809487;
+}
+.survivor-capacity-panel b{
+  font-size:13px;
+}
+.survivor-capacity-slots{
+  display:flex;
+  justify-content:center;
+  gap:5px;
+}
+.survivor-capacity-slots i{
+  width:18px;
+  height:5px;
+  border-radius:99px;
+  background:#26372e;
+}
+.survivor-capacity-slots i.filled{
+  background:#8fd09d;
+}
+.survivor-capacity-panel small{
+  text-align:right;
+}
+
+/* Folded secondary information: readable preview without text touching controls. */
+.dashboard-fold{
+  margin-top:12px!important;
+}
+.dashboard-fold summary{
+  min-height:54px!important;
+  padding:10px 12px!important;
+}
+.dashboard-fold summary>div:first-child{
+  gap:5px!important;
+  padding-right:4px;
+}
+.dashboard-fold summary span{
+  font-size:8px!important;
+  line-height:1!important;
+}
+.dashboard-fold summary b{
+  max-width:none!important;
+  font-size:9px!important;
+  line-height:1.35!important;
+  white-space:normal!important;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.activity-fold summary b{
+  max-width:none!important;
+}
+.fold-count{
+  flex:0 0 28px;
+  min-width:28px!important;
+  height:28px!important;
+}
+
+/* Workbench is a physical workspace, never a character portrait. */
+.station-workbench,
+.visual-workbench{
+  background-position:center 42%!important;
+}
+.panel-visual.visual-workbench img{
+  object-position:center 42%!important;
+}
+
+/* Narrow phones: retain symmetry without shrinking text into unreadability. */
+@media(max-width:360px){
+  .status-line{
+    grid-template-columns:minmax(68px,1fr) minmax(42px,62px) 28px!important;
+    gap:7px!important;
+    padding:8px!important;
+  }
+  .status-label span{font-size:11.5px!important}
+  .status-line>b{font-size:14px!important;width:28px}
+  .compact-stations .station{min-height:110px!important;padding:10px!important}
+  .compact-survivors .survivor{grid-template-columns:48px minmax(0,1fr) 56px!important;gap:9px!important}
+  .compact-survivors .avatar.portrait{width:48px!important;height:48px!important;flex-basis:48px!important}
+  .compact-survivors .trust{width:56px}
+  .survivor-capacity-panel{grid-template-columns:auto 1fr}
+  .survivor-capacity-panel>small{grid-column:1/-1;text-align:left}
+}
