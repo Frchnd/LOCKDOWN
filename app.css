@@ -1087,3 +1087,162 @@ button,.btn,.action{min-height:var(--ui-control)}
   .survivor-capacity-panel{grid-template-columns:auto 1fr}
   .survivor-capacity-panel>small{grid-column:1/-1;text-align:left}
 }
+
+/* =========================================================
+   v0.19.6 — RESPONSIVE UI FIX
+   Robust dashboard geometry for 320–520px phone viewports.
+   ========================================================= */
+.dashboard-screen{
+  overflow-x:hidden;
+}
+.dashboard-screen .compact-head{
+  margin-left:0!important;
+  margin-right:0!important;
+}
+.dashboard-screen .compact-head>span{
+  max-width:48%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Status cells: two-row layout prevents values from ever leaking into neighbors. */
+.status-console{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  padding:8px!important;
+  overflow:hidden!important;
+}
+.status-console *{min-width:0}
+.status-line{
+  min-width:0!important;
+  width:100%!important;
+  min-height:58px!important;
+  padding:9px 10px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-rows:auto auto!important;
+  grid-template-areas:
+    "label value"
+    "bar bar"!important;
+  align-content:center!important;
+  align-items:center!important;
+  column-gap:8px!important;
+  row-gap:8px!important;
+  overflow:hidden!important;
+}
+.status-label{
+  grid-area:label!important;
+  min-width:0!important;
+  gap:3px!important;
+  overflow:hidden;
+}
+.status-label span{
+  display:block;
+  max-width:100%;
+  font-size:11.5px!important;
+  line-height:1.05!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.status-label small{
+  display:block;
+  margin:0!important;
+  font-size:6.8px!important;
+  line-height:1!important;
+  letter-spacing:.075em!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.status-line>b{
+  grid-area:value!important;
+  width:auto!important;
+  min-width:28px!important;
+  max-width:42px!important;
+  justify-self:end!important;
+  margin:0!important;
+  font-size:15px!important;
+  line-height:1!important;
+  font-variant-numeric:tabular-nums;
+  text-align:right!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+}
+.status-mini-bar{
+  grid-area:bar!important;
+  width:100%!important;
+  height:4px!important;
+  margin:0!important;
+  overflow:hidden!important;
+}
+
+/* Locked stations remain readable: disabled interaction, not disabled information. */
+.dashboard-stations .station.locked,
+.dashboard-stations .station.locked[disabled]{
+  opacity:.72!important;
+  filter:saturate(.62) brightness(.82)!important;
+}
+.dashboard-stations .station.locked .station-emblem{
+  opacity:.72!important;
+  filter:grayscale(.45)!important;
+}
+.dashboard-stations .station.locked .station-copy{
+  opacity:.84!important;
+}
+.dashboard-stations .station.locked .station-copy b{
+  color:#d7e2da!important;
+}
+.dashboard-stations .station.locked .station-copy small{
+  color:#899b8e!important;
+}
+.dashboard-stations .station.locked .lock-reason{
+  color:#a8b7ab!important;
+  border-top-color:rgba(115,145,124,.26)!important;
+  font-size:7.5px!important;
+  letter-spacing:.045em!important;
+}
+
+/* Keep cards symmetrical and prevent any child text from forcing width. */
+.compact-stations,.compact-survivors,.status-console{min-width:0!important;max-width:100%!important}
+.compact-stations .station,.compact-survivors .survivor{min-width:0!important;overflow:hidden!important}
+.compact-stations .station-copy,.compact-stations .station-copy>*{min-width:0!important;max-width:100%!important}
+.compact-stations .station-copy small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.compact-stations .lock-reason{white-space:normal;overflow-wrap:anywhere}
+
+/* Secondary sections stay compact, but preview text never collides with counters. */
+.dashboard-fold summary>div:first-child{min-width:0!important;flex:1 1 auto!important}
+.dashboard-fold summary b{overflow-wrap:anywhere}
+.fold-count,.fold-dots{flex:0 0 auto!important}
+
+/* Narrow Android phones. Keep 2-column dashboard instead of collapsing unpredictably. */
+@media(max-width:380px){
+  .dashboard-screen{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important}
+  .status-console{gap:7px!important;padding:7px!important}
+  .status-line{min-height:56px!important;padding:8px!important;column-gap:6px!important;row-gap:7px!important}
+  .status-label span{font-size:10.8px!important}
+  .status-label small{font-size:6.4px!important}
+  .status-line>b{font-size:14px!important;max-width:36px!important}
+  .compact-stations{gap:8px!important}
+  .compact-stations .station{min-height:106px!important;padding:9px!important}
+  .compact-stations .station-copy{margin-top:8px!important}
+  .compact-stations .station-copy b{font-size:12.5px!important}
+  .compact-stations .station-copy small{font-size:8px!important}
+}
+@media(max-width:335px){
+  .status-console{grid-template-columns:1fr!important}
+  .status-line{min-height:52px!important}
+  .compact-stations{grid-template-columns:1fr 1fr!important}
+  .compact-stations .station{min-height:102px!important}
+}
+
+/* Remove redundant outer status card; the eight cells are the visual units. */
+.status-console{
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  margin-bottom:2px!important;
+}
