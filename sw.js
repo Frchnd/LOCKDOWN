@@ -1,6 +1,6 @@
-const CACHE='lockdown-v19-6';
+const CACHE='lockdown-v19-7';
 const CORE=[
- './','./index.html','./app.css?v=0196','./app.js?v=0196','./manifest.webmanifest',
+ './','./index.html','./app.css?v=0197','./app.js?v=0197','./manifest.webmanifest',
  './assets/menu-bg.webp','./assets/icon-192.png','./assets/icon-512.png','./assets/concept-board.webp',
  './assets/prologue/prologue_01_emergency.webp',
  './assets/prologue/prologue_02_flash.webp',
